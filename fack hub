@@ -548,6 +548,10 @@ end)
         end  
 	})
 
+local Section = bTab:AddSection({
+	Name = "Part3"
+})
+
 bTab:AddButton({
 	Name = "Auto Butterfly Collector",
 	Callback = function()
@@ -630,6 +634,34 @@ humanoidRootPart.CFrame = targetCFrame
 
 -- ตั้งมุมกล้องหันลงพื้น
 workspace.CurrentCamera.CFrame = CFrame.new(targetCFrame.Position, targetCFrame.Position - Vector3.new(0, 1, 0))
+        end  
+	})
+
+local Section = bTab:AddSection({
+	Name = "ESP"
+})
+
+bTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local monsters = workspace.Monsters
+
+for _, model in ipairs(monsters:GetChildren()) do
+    if model:IsA("Model") then
+        -- ลบ Highlight ที่มีอยู่แล้ว
+        local existingHighlight = model:FindFirstChildOfClass("Highlight")
+        if existingHighlight then
+            existingHighlight:Destroy()
+        end
+        
+        -- สร้าง Highlight ใหม่
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = model
+        highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    end
+end
         end  
 	})
 
