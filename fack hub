@@ -726,6 +726,39 @@ local Section = bTab:AddSection({
 })
 
 bTab:AddButton({
+	Name = "esp item",
+	Callback = function()
+local pickaxes = {workspace.PickaxePuzzle.Items.Pickaxe1, workspace.PickaxePuzzle.Items.Pickaxe2, workspace.PickaxePuzzle.Items.Pickaxe3, workspace.PickaxePuzzle.Items.Pickaxe4}
+
+local function addESPBox(object, size)
+    -- ตรวจสอบว่ามี ESP Box อันเดิมอยู่หรือไม่ ถ้ามีก็ลบทิ้ง
+    if object:FindFirstChild("ESPBox") then
+        object:FindFirstChild("ESPBox"):Destroy()
+    end
+    
+    -- สร้าง BoxHandleAdornment สำหรับ ESP Box
+    local espBox = Instance.new("BoxHandleAdornment")
+    espBox.Name = "ESPBox"
+    espBox.Adornee = object  -- ระบุว่าวัตถุไหนที่กล่องจะถูกเพิ่มไปที่
+    espBox.Size = size  -- ขนาดของกล่อง ESP (รับจากพารามิเตอร์ size)
+    espBox.Color3 = Color3.new(0, 1, 0)  -- สีเขียว
+    espBox.Transparency = 0.5  -- โปร่งใส 50%
+    espBox.ZIndex = 0  -- ทำให้กล่องอยู่ข้างหลัง
+    espBox.AlwaysOnTop = true  -- แสดง ESP Box ตลอดเวลา
+    espBox.Parent = object  -- เพิ่ม ESP Box เข้าไปใน Pickaxe
+end
+
+-- ขนาดที่ต้องการสำหรับ ESP Box (สามารถปรับเปลี่ยนได้)
+local customSize = Vector3.new(3, 3, 3)
+
+-- เรียกใช้ฟังก์ชันเพิ่ม ESP Box ให้กับ Pickaxe ทั้ง 4 อัน โดยส่งขนาดที่ต้องการ
+for _, pickaxe in pairs(pickaxes) do
+    addESPBox(pickaxe, customSize)
+end
+        end  
+	})
+
+bTab:AddButton({
 	Name = "esp Monster",
 	Callback = function()
 local monsters = workspace.Monsters
@@ -757,6 +790,104 @@ bTab:AddButton({
 	Name = "Auto Win",
 	Callback = function()
 game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-15.5, 26, -268.899963, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+        end  
+	})
+
+bTab:AddButton({
+	Name = "esp item",
+	Callback = function()
+local key1g = workspace.KeyStuff.Key1.Key1G
+
+-- ตรวจสอบและลบ Highlight เก่า (ถ้ามี)
+if key1g:FindFirstChildOfClass("Highlight") then
+    key1g:FindFirstChildOfClass("Highlight"):Destroy()
+end
+
+-- สร้าง Highlight ใหม่
+local highlight = Instance.new("Highlight")
+highlight.Adornee = key1g
+highlight.FillColor = Color3.fromRGB(0, 255, 0) -- สีเขียว
+highlight.FillTransparency = 0.5 -- ความโปร่งใส 50%
+highlight.OutlineColor = Color3.fromRGB(0, 255, 0) -- เส้นขอบสีเขียว
+
+-- เพิ่ม Highlight ไปยัง Key1G
+highlight.Parent = key1g
+
+-- ตรวจสอบและลบ ESP (BillboardGui) เก่า (ถ้ามี)
+if key1g:FindFirstChild("ESPText") then
+    key1g:FindFirstChild("ESPText"):Destroy()
+end
+
+-- สร้าง BillboardGui เพื่อใช้แสดง ESP Text
+local billboardGui = Instance.new("BillboardGui")
+billboardGui.Name = "ESPText"
+billboardGui.Adornee = key1g
+billboardGui.Size = UDim2.new(0, 25, 0, 25)
+billboardGui.StudsOffset = Vector3.new(0, 1, 0) -- ระยะห่างจาก object
+billboardGui.AlwaysOnTop = true
+
+-- สร้าง TextLabel เพื่อแสดงชื่อ "Key1"
+local textLabel = Instance.new("TextLabel")
+textLabel.Size = UDim2.new(1, 0, 1, 0)
+textLabel.Text = "Key1"
+textLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- สีเขียว
+textLabel.BackgroundTransparency = 1 -- ไม่มีพื้นหลัง
+textLabel.TextScaled = true -- ปรับขนาดอัตโนมัติ
+
+-- เพิ่ม TextLabel ไปที่ BillboardGui
+textLabel.Parent = billboardGui
+
+-- เพิ่ม BillboardGui ไปยัง Key1G
+billboardGui.Parent = key1g
+
+local codeNote = workspace.CodeStuff.CodeNote
+
+-- ฟังก์ชันเพื่อลบ Highlight และ ESP Text เก่า
+local function removeOldElements()
+    for _, child in ipairs(codeNote:GetChildren()) do
+        if child:IsA("Highlight") then
+            child:Destroy()
+        elseif child:IsA("BillboardGui") and child.Name == "ESP" then
+            child:Destroy()
+        end
+    end
+end
+
+-- ฟังก์ชันเพื่อตั้งค่า Highlight ใหม่
+local function addNewHighlight()
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "Highlight"
+    highlight.Parent = codeNote
+    highlight.FillColor = Color3.fromRGB(0, 255, 0) -- สีเขียว
+    highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    highlight.OutlineColor = Color3.fromRGB(0, 128, 0) -- สีเขียวเข้มสำหรับเส้นขอบ
+end
+
+-- ฟังก์ชันเพื่อตั้งค่า ESP Text ใหม่
+local function addNewESP()
+    local espGui = Instance.new("BillboardGui")
+    espGui.Name = "ESP"
+    espGui.Adornee = codeNote
+    espGui.Size = UDim2.new(0, 25, 1, 25)
+    espGui.StudsOffset = Vector3.new(0, 2, 0) -- ปรับตำแหน่งให้สูงขึ้น
+    espGui.AlwaysOnTop = true -- ตั้งค่าให้ ESP อยู่ด้านบนเสมอ
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.Text = "Code"
+    textLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- สีเขียว
+    textLabel.BackgroundTransparency = 1 -- โปร่งใส
+    textLabel.TextScaled = true -- ขยายข้อความให้เต็มพื้นที่
+
+    -- นำ TextLabel ใส่ใน BillboardGui
+    textLabel.Parent = espGui
+    espGui.Parent = codeNote
+end
+
+-- เรียกใช้ฟังก์ชัน
+removeOldElements()
+addNewHighlight()
+addNewESP()
         end  
 	})
 
