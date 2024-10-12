@@ -1,0 +1,636 @@
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+
+local Window = OrionLib:MakeWindow({Name = "Fack HUB", HidePremium = false,  Introtext = "Fack HUB", SaveConfig = true, ConfigFolder = "Fack HUB"})
+
+OrionLib:MakeNotification({
+	Name = "hey",
+	Content = "I thed it for the first just",
+	Image = "rbxassetid://4483345998",
+	TimeTime
+	})
+
+local cTab = Window:MakeTab({
+	Name = "book1 chapter1",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+	})
+
+local Section = cTab:AddSection({
+	Name = "Part1"
+})
+
+cTab:AddButton({
+	Name = "Auto Butterfly Collector",
+	Callback = function()
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local collectingBlocksFolder = workspace:WaitForChild("CollectingBlocks")
+local camera = game.Workspace.CurrentCamera
+
+-- ฟังก์ชันเพื่อเก็บ ProximityPrompt รอบ ๆ ผู้เล่น
+local function collectNearbyPrompts()
+    local collectingBlocks = workspace.CollectingBlocks:GetChildren()
+
+    while true do
+        for i = 1, math.min(16, #collectingBlocks) do
+            local prompt = collectingBlocks[i]:FindFirstChild("ProximityPrompt")
+            if prompt then
+                prompt.MaxActivationDistance = 15  -- เพิ่มระยะการกดเป็น 15
+                prompt.RequiresLineOfSight = false
+                -- ตรวจสอบระยะห่างระหว่างผู้เล่นกับ ProximityPrompt
+                local distance = (character.HumanoidRootPart.Position - prompt.Parent.Position).Magnitude
+                if distance <= prompt.MaxActivationDistance then
+                    prompt.HoldDuration = 0  -- ตั้งค่า HoldDuration เป็น 0
+                    prompt:InputHoldBegin()  -- เริ่มการเก็บ
+                    prompt:InputHoldEnd()    -- ยืนยันการเก็บ
+                end
+            end
+        end
+        wait(0.1)  -- ตรวจสอบซ้ำทุก 0.1 วินาที
+    end
+end
+
+-- ฟังก์ชันเพื่อวาร์ปไปที่ Butterfly ทีละอัน
+local function teleportToButterflies()
+    while true do
+        local hasButterflies = false
+        
+        for _, butterfly in pairs(collectingBlocksFolder:GetChildren()) do
+            if butterfly:IsA("MeshPart") and butterfly.Name == "Butterfly" then
+                hasButterflies = true
+                -- วาร์ปไปยังตำแหน่งของ Butterfly โดยเพิ่มความสูง 5 หน่วย
+                humanoidRootPart.CFrame = butterfly.CFrame + Vector3.new(0, 2, 0)
+                
+                -- เปลี่ยนมุมกล้องให้หันไปที่พื้น
+                camera.CFrame = CFrame.new(humanoidRootPart.Position + Vector3.new(0, 5, 0), humanoidRootPart.Position)
+
+                wait(0.5) -- รอ 1 วินาทีก่อนจะไปที่ตัวถัดไป (สามารถปรับได้)
+            end
+        end
+        
+        if not hasButterflies then
+            break -- ออกจากลูปถ้าไม่มี Butterfly
+        end
+    end
+end
+
+-- เรียกใช้ทั้งสองฟังก์ชันพร้อมกัน
+spawn(collectNearbyPrompts)
+spawn(teleportToButterflies)
+        end  
+	})
+
+local Section = cTab:AddSection({
+	Name = "ESP"
+})
+
+cTab:AddButton({
+	Name = "esp item",
+	Callback = function()
+-- Function to create an ESP box
+local function createESPBox(part, size)
+    -- Remove existing ESP box if it exists
+    if part:FindFirstChild("ESPBox") then
+        part.ESPBox:Destroy()
+    end
+
+    -- Create a new ESP box
+    local box = Instance.new("BoxHandleAdornment")
+    box.Name = "ESPBox"
+    box.Adornee = part
+    box.AlwaysOnTop = true
+    box.ZIndex = 10
+    box.Size = size -- Vector3.new(x, y, z) ปรับขนาดตามที่ต้องการ
+    box.Color3 = Color3.new(0, 1, 0) -- สีเขียว
+    box.Transparency = 0.5 -- โปร่งใส 50%
+    box.Parent = part
+end
+
+-- Get the CollectingBlocks from workspace
+local collectingBlocks = workspace:FindFirstChild("CollectingBlocks")
+
+-- Check if CollectingBlocks exists
+if collectingBlocks then
+    -- Loop through all the children in CollectingBlocks
+    for _, child in pairs(collectingBlocks:GetChildren()) do
+        -- Check if the child is named "Butterfly"
+        if child.Name == "Butterfly" and child:IsA("BasePart") then
+            -- Call the function to add the ESP box
+            createESPBox(child, Vector3.new(2, 2, 2)) -- ปรับขนาดตามต้องการ
+        end
+    end
+else
+    warn("CollectingBlocks not found!")
+end
+
+local keys = {
+    {name = "Key1G", displayName = "Key1"},
+    {name = "Key2G", displayName = "Key2"},
+    {name = "Key3G", displayName = "Key3"},
+    {name = "Key4G", displayName = "Key4"}
+}
+
+for _, keyData in ipairs(keys) do
+    local key = workspace:FindFirstChild(keyData.name)
+    if key then
+        -- ลบ Highlight เดิมถ้ามี
+        local oldHighlight = key:FindFirstChildOfClass("Highlight")
+        if oldHighlight then
+            oldHighlight:Destroy()
+        end
+
+        -- สร้าง Highlight ใหม่
+        local newHighlight = Instance.new("Highlight")
+        newHighlight.FillTransparency = 0.5 -- โปร่งใส 50% ข้างใน
+        newHighlight.OutlineColor = Color3.fromRGB(128, 0, 128) -- สีม่วงสำหรับเส้นขอบ
+        newHighlight.OutlineTransparency = 0 -- ความทึบของเส้นขอบ (0 คือทึบ)
+        newHighlight.FillColor = Color3.fromRGB(128, 0, 128) -- สีม่วงด้านใน แต่จะโปร่งใส
+        newHighlight.Parent = key
+
+        -- ลบ ESP Text เดิมถ้ามี
+        local oldEsp = key:FindFirstChild("ESPText")
+        if oldEsp then
+            oldEsp:Destroy()
+        end
+
+        -- สร้าง BillboardGui ใหม่สำหรับ ESP Text
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "ESPText"
+        billboard.Size = UDim2.new(0, 25, 0, 25) -- ขนาดของกล่องข้อความ
+        billboard.Adornee = key -- ติดที่วัตถุ Key
+        billboard.AlwaysOnTop = true -- ให้มองเห็นตลอด
+        billboard.StudsOffset = Vector3.new(0, 1, 0) -- ยกตำแหน่งขึ้นเล็กน้อย
+        billboard.Parent = key
+
+        -- สร้าง TextLabel เพื่อแสดงชื่อ
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(1, 0, 1, 0) -- ขนาดของข้อความใน BillboardGui
+        textLabel.BackgroundTransparency = 1 -- พื้นหลังโปร่งใส
+        textLabel.Text = keyData.displayName -- ตั้งชื่อ ESP ตามที่กำหนด
+        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- สีขาว
+        textLabel.TextScaled = true -- ขนาดข้อความปรับตามขนาดกล่อง
+        textLabel.Parent = billboard
+    end
+end
+
+local katanaNames = {"KATANA1", "KATANA2", "KATANA3", "KATANA4"}
+
+for _, katanaName in ipairs(katanaNames) do
+    local katana = workspace.KatanaPlacePuzzle.Items:FindFirstChild(katanaName)
+    
+    if katana then
+        -- ลบ Highlights ที่มีอยู่แล้ว
+        local oldHighlight = katana:FindFirstChildOfClass("Highlight")
+        if oldHighlight then
+            oldHighlight:Destroy()
+        end
+        
+        -- สร้าง Highlight ใหม่
+        local newHighlight = Instance.new("Highlight")
+        newHighlight.Parent = katana
+        newHighlight.FillColor = Color3.fromRGB(0, 255, 0) -- สีเขียว
+        newHighlight.FillTransparency = 0.5 -- โปร่งใส 50%
+        newHighlight.OutlineColor = Color3.fromRGB(0, 255, 0) -- สีขอบเขียว
+
+        -- ลบ BillboardGui และ TextLabel ที่มีอยู่แล้ว
+        local oldBillboard = katana:FindFirstChildOfClass("BillboardGui")
+        if oldBillboard then
+            oldBillboard:Destroy()
+        end
+        
+        -- สร้าง BillboardGui ใหม่
+        local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Parent = katana
+        billboardGui.Adornee = katana
+        billboardGui.Size = UDim2.new(0, 50, 0, 50)  -- ขนาดของกล่องข้อความ
+        billboardGui.StudsOffset = Vector3.new(0, 2, 0)  -- ระยะห่างจากวัตถุ
+        billboardGui.AlwaysOnTop = true  -- ทำให้มองทะลุกำแพง
+        
+        -- สร้าง TextLabel ใหม่
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Parent = billboardGui
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1 -- พื้นหลังโปร่งใส
+        textLabel.Text = katanaName -- ตั้งชื่อให้เป็นชื่อของไฟล์
+        textLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- ข้อความสีเขียว
+        textLabel.TextScaled = true -- ปรับขนาดข้อความตามกล่อง
+    end
+end
+        end  
+	})
+
+cTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local phantomKarina = workspace.Monsters:FindFirstChild("PhantomKarina")
+
+if phantomKarina then
+    -- ตรวจสอบและลบ Highlights ที่มีอยู่ก่อนแล้ว
+    local existingHighlight = phantomKarina:FindFirstChildOfClass("Highlight")
+    if existingHighlight then
+        existingHighlight:Destroy()
+    end
+
+    -- เพิ่ม Highlight ใหม่
+    local newHighlight = Instance.new("Highlight")
+    newHighlight.Name = "PhantomKarinaHighlight"
+    newHighlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+    newHighlight.FillTransparency = 0.5 -- ความโปร่งใส 50%
+    newHighlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- เส้นขอบสีแดง
+    newHighlight.Parent = phantomKarina
+end
+        end  
+	})
+
+local Section = cTab:AddSection({
+	Name = "Part2"
+})
+
+cTab:AddButton({
+	Name = "tp to exit",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-333.023743, 4.00000095, 400.802979, -0.99936223, -3.88274728e-08, -0.0357087515, -3.76549387e-08, 1, -3.35085097e-08, 0.0357087515, -3.21425269e-08, -0.99936223)
+        end  
+	})
+
+local Section = cTab:AddSection({
+	Name = "ESP"
+})
+
+cTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local phantomKarina = workspace.Monsters:FindFirstChild("GhostKarina")
+
+if phantomKarina then
+    -- ตรวจสอบและลบ Highlights ที่มีอยู่ก่อนแล้ว
+    local existingHighlight = phantomKarina:FindFirstChildOfClass("Highlight")
+    if existingHighlight then
+        existingHighlight:Destroy()
+    end
+
+    -- เพิ่ม Highlight ใหม่
+    local newHighlight = Instance.new("Highlight")
+    newHighlight.Name = "PhantomKarinaHighlight"
+    newHighlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+    newHighlight.FillTransparency = 0.5 -- ความโปร่งใส 50%
+    newHighlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- เส้นขอบสีแดง
+    newHighlight.Parent = phantomKarina
+end
+        end  
+	})
+
+local bTab = Window:MakeTab({
+	Name = "book1 chapter2",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+	})
+
+local Section = bTab:AddSection({
+	Name = "Part1"
+})
+
+bTab:AddButton({
+	Name = "Auto Butterfly Collector",
+	Callback = function()
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local collectingBlocksFolder = workspace:WaitForChild("CollectingBlocks")
+local camera = game.Workspace.CurrentCamera
+
+-- ฟังก์ชันเพื่อเก็บ ProximityPrompt รอบ ๆ ผู้เล่น
+local function collectNearbyPrompts()
+    local collectingBlocks = workspace.CollectingBlocks:GetChildren()
+
+    while true do
+        for i = 1, math.min(16, #collectingBlocks) do
+            local prompt = collectingBlocks[i]:FindFirstChild("ProximityPrompt")
+            if prompt then
+                prompt.MaxActivationDistance = 15  -- เพิ่มระยะการกดเป็น 15
+                prompt.RequiresLineOfSight = false
+                -- ตรวจสอบระยะห่างระหว่างผู้เล่นกับ ProximityPrompt
+                local distance = (character.HumanoidRootPart.Position - prompt.Parent.Position).Magnitude
+                if distance <= prompt.MaxActivationDistance then
+                    prompt.HoldDuration = 0  -- ตั้งค่า HoldDuration เป็น 0
+                    prompt:InputHoldBegin()  -- เริ่มการเก็บ
+                    prompt:InputHoldEnd()    -- ยืนยันการเก็บ
+                end
+            end
+        end
+        wait(0.1)  -- ตรวจสอบซ้ำทุก 0.1 วินาที
+    end
+end
+
+-- ฟังก์ชันเพื่อวาร์ปไปที่ Butterfly ทีละอัน
+local function teleportToButterflies()
+    while true do
+        local hasButterflies = false
+        
+        for _, butterfly in pairs(collectingBlocksFolder:GetChildren()) do
+            if butterfly:IsA("MeshPart") and butterfly.Name == "Butterfly" then
+                hasButterflies = true
+                -- วาร์ปไปยังตำแหน่งของ Butterfly โดยเพิ่มความสูง 5 หน่วย
+                humanoidRootPart.CFrame = butterfly.CFrame + Vector3.new(0, 2, 0)
+                
+                -- เปลี่ยนมุมกล้องให้หันไปที่พื้น
+                camera.CFrame = CFrame.new(humanoidRootPart.Position + Vector3.new(0, 5, 0), humanoidRootPart.Position)
+
+                wait(0.5) -- รอ 1 วินาทีก่อนจะไปที่ตัวถัดไป (สามารถปรับได้)
+            end
+        end
+        
+        if not hasButterflies then
+            break -- ออกจากลูปถ้าไม่มี Butterfly
+        end
+    end
+end
+
+-- เรียกใช้ทั้งสองฟังก์ชันพร้อมกัน
+spawn(collectNearbyPrompts)
+spawn(teleportToButterflies)
+wait(13)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-713.5, 27.5, 947.5, 0, 0, -1, 0, 1, 0, 1, 0, 0)
+        end  
+	})
+
+bTab:AddButton({
+	Name = "auto run",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(824.5, 20.5, 469.5, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+        end  
+	})
+
+local Section = bTab:AddSection({
+	Name = "ESP"
+})
+
+bTab:AddButton({
+	Name = "esp item",
+	Callback = function()
+-- Function to create an ESP box
+local function createESPBox(part, size)
+    -- Remove existing ESP box if it exists
+    if part:FindFirstChild("ESPBox") then
+        part.ESPBox:Destroy()
+    end
+
+    -- Create a new ESP box
+    local box = Instance.new("BoxHandleAdornment")
+    box.Name = "ESPBox"
+    box.Adornee = part
+    box.AlwaysOnTop = true
+    box.ZIndex = 10
+    box.Size = size -- Vector3.new(x, y, z) ปรับขนาดตามที่ต้องการ
+    box.Color3 = Color3.new(0, 1, 0) -- สีเขียว
+    box.Transparency = 0.5 -- โปร่งใส 50%
+    box.Parent = part
+end
+
+-- Get the CollectingBlocks from workspace
+local collectingBlocks = workspace:FindFirstChild("CollectingBlocks")
+
+-- Check if CollectingBlocks exists
+if collectingBlocks then
+    -- Loop through all the children in CollectingBlocks
+    for _, child in pairs(collectingBlocks:GetChildren()) do
+        -- Check if the child is named "Butterfly"
+        if child.Name == "Butterfly" and child:IsA("BasePart") then
+            -- Call the function to add the ESP box
+            createESPBox(child, Vector3.new(2, 2, 2)) -- ปรับขนาดตามต้องการ
+        end
+    end
+else
+    warn("CollectingBlocks not found!")
+end
+        end  
+	})
+
+bTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local phantomKarina = workspace.Monsters:FindFirstChild("CaveStalker")
+
+if phantomKarina then
+    -- ตรวจสอบและลบ Highlights ที่มีอยู่ก่อนแล้ว
+    local existingHighlight = phantomKarina:FindFirstChildOfClass("Highlight")
+    if existingHighlight then
+        existingHighlight:Destroy()
+    end
+
+    -- เพิ่ม Highlight ใหม่
+    local newHighlight = Instance.new("Highlight")
+    newHighlight.Name = "PhantomKarinaHighlight"
+    newHighlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+    newHighlight.FillTransparency = 0.5 -- ความโปร่งใส 50%
+    newHighlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- เส้นขอบสีแดง
+    newHighlight.Parent = phantomKarina
+end
+        end  
+	})
+
+local Section = bTab:AddSection({
+	Name = "Part2"
+})
+
+bTab:AddButton({
+	Name = "Auto Win",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(595.389465, 20.358448, 508.501465, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+wait()
+-- สร้างตัวแปรสำหรับอ้างอิงไปยัง ProximityPrompt
+local lights = {
+    workspace.MainPuzzle.FireLights.PuzzleLight1,
+    workspace.MainPuzzle.FireLights.PuzzleLight2,
+    workspace.MainPuzzle.FireLights.PuzzleLight3,
+    workspace.MainPuzzle.FireLights.PuzzleLight4,
+    workspace.MainPuzzle.FireLights.PuzzleLight5,
+    workspace.MainPuzzle.FireLights.PuzzleLight6,
+}
+
+-- ฟังก์ชันสำหรับปรับระยะเวลาการกดของ ProximityPrompt
+local function adjustProximityPrompts()
+    for _, light in ipairs(lights) do
+        local proximityPrompt = light.LightPart:FindFirstChildOfClass("ProximityPrompt")
+        if proximityPrompt then
+            proximityPrompt.HoldDuration = 0 -- ปรับระยะเวลาการกดที่นี่
+        end
+    end
+end
+
+-- ฟังก์ชันสำหรับจำลองการกดค้าง
+local function simulateInputHold()
+    while true do
+        for i = 1, 6 do
+            local prompt = workspace.MainPuzzle.FireLights["PuzzleLight" .. i].LightPart.ProximityPrompt
+            
+            if prompt then
+                prompt:InputHoldBegin()  -- จำลองการเริ่มการกด
+                prompt:InputHoldEnd()    -- จำลองการกดค้างเสร็จสิ้น
+            end
+            
+            wait() -- พักระหว่างการกดก่อนเริ่มใหม่
+        end
+    end
+end
+
+local player = game.Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local lightsForTeleport = {
+    workspace.MainPuzzle.FireLights.PuzzleLight1["Cube.024"],
+    workspace.MainPuzzle.FireLights.PuzzleLight2["Cube.024"],
+    workspace.MainPuzzle.FireLights.PuzzleLight3["Cube.024"],
+    workspace.MainPuzzle.FireLights.PuzzleLight4["Cube.024"],
+    workspace.MainPuzzle.FireLights.PuzzleLight5["Cube.024"],
+    workspace.MainPuzzle.FireLights.PuzzleLight6["Cube.024"]
+}
+
+-- ฟังก์ชันเพื่อหาค่าตำแหน่ง ProximityPrompt ที่ใกล้ที่สุด
+local function findClosestPrompt()
+    local closestPrompt = nil
+    local closestDistance = math.huge -- เริ่มต้นด้วยค่าระยะทางที่สูงสุด
+
+    for i = 1, 6 do
+        local puzzleLight = workspace.MainPuzzle.FireLights["PuzzleLight" .. i]
+        local proximityPrompt = puzzleLight.LightPart:FindFirstChild("ProximityPrompt")
+
+        if proximityPrompt then
+            local distance = (player.Character.HumanoidRootPart.Position - proximityPrompt.Parent.Position).magnitude
+
+            -- เช็คว่าตำแหน่งนี้ใกล้กว่าที่เรามีอยู่หรือไม่
+            if distance < closestDistance then
+                closestDistance = distance
+                closestPrompt = proximityPrompt
+            end
+        end
+    end
+
+    return closestPrompt
+end
+
+-- ฟังก์ชันที่จะเปลี่ยนมุมกล้องไปหาตำแหน่งของ ProximityPrompt ที่ใกล้ที่สุด
+local function lookAtClosestPrompt()
+    local closestPrompt = findClosestPrompt()
+
+    if closestPrompt then
+        local targetPosition = closestPrompt.Parent.Position
+        camera.CFrame = CFrame.new(camera.CFrame.Position, targetPosition) -- หันกล้องไปหาตำแหน่ง
+    end
+end
+
+-- ฟังก์ชันที่จะวาปไปยัง Cube.024 ทั้งหมด
+local function teleportToLights()
+    for _, light in ipairs(lightsForTeleport) do
+        if light then
+            -- วาปไปที่ตำแหน่งของ Cube.024 แต่เพิ่ม Y ขึ้น 10 หน่วย
+            local newCFrame = light.CFrame + Vector3.new(0, 10, 0)
+            player.Character.HumanoidRootPart.CFrame = newCFrame
+            wait(0.5)
+            
+            -- หันกล้องไปที่ ProximityPrompt ที่ใกล้ที่สุดหลังจากวาป
+            lookAtClosestPrompt()
+            wait(0.5) -- หยุดเวลาอีก 0.1 วินาทีก่อนที่จะทำซ้ำ
+        end
+    end
+end
+
+-- เริ่มการทำงานพร้อมกัน
+task.spawn(adjustProximityPrompts)
+task.spawn(simulateInputHold)
+task.spawn(function()
+    while true do
+        teleportToLights()
+        wait(2) -- รอ 2 วินาทีก่อนที่จะเริ่มวนซ้ำใหม่
+    end
+end)
+        end  
+	})
+
+bTab:AddButton({
+	Name = "Auto Butterfly Collector",
+	Callback = function()
+local function triggerProximityPrompts()
+    while true do
+        for i = 1, 4 do
+            local proximityPrompt = workspace.CurseBurnPuzzle.Items["Cursed" .. i].ProximityPrompt
+            proximityPrompt.HoldDuration = 0 -- ปรับระยะเวลาเป็น 0 วินาที
+            proximityPrompt:InputHoldBegin() -- เริ่มการโต้ตอบ            
+            proximityPrompt:InputHoldEnd() -- จบการโต้ตอบ
+        end
+        wait(0.5) -- รอ  วินาทีก่อนเริ่มลูปใหม่
+    end
+end
+
+-- ฟังก์ชันสำหรับวาปไปยังตำแหน่งของ Cursed1 ถึง Cursed4
+local function teleportToCursedItems()
+    local player = game.Players.LocalPlayer -- เปลี่ยนเป็น game.Players.ServerPlayer ถ้าอยู่ในสคริปต์เซิร์ฟเวอร์
+    local character = player.Character or player.CharacterAdded:Wait()
+    local camera = game.Workspace.CurrentCamera
+
+    -- รายการของ Cursed Items
+    local cursedItems = {
+        workspace.CurseBurnPuzzle.Items.Cursed1,
+        workspace.CurseBurnPuzzle.Items.Cursed2,
+        workspace.CurseBurnPuzzle.Items.Cursed3,
+        workspace.CurseBurnPuzzle.Items.Cursed4
+    }
+
+    for _, item in ipairs(cursedItems) do
+        -- เช็คว่ามีตำแหน่งของ item หรือไม่
+        if item and item:IsA("BasePart") then
+            -- วาปไปยังตำแหน่ง item โดยเพิ่มแกน Y ขึ้นไป 5 หน่วย
+            local newCFrame = item.CFrame * CFrame.new(0, 8, 0)
+
+            -- ตั้งค่า CFrame ของกล้องหันลง
+            camera.CFrame = newCFrame * CFrame.Angles(math.rad(-90), 0, 0)
+
+            -- วาปตัวละครไปยังตำแหน่ง item
+            character:SetPrimaryPartCFrame(newCFrame)
+            wait(0.5) -- รอ 0.5 วินาทีก่อนจะไปยัง item ถัดไป
+        end
+    end
+end
+
+-- จำลองการกด ProximityPrompt
+local function simulatePromptPress()
+    local player = game.Players.LocalPlayer
+    local proximityPrompt = workspace.CurseBurnPuzzle.BurnTrigger.ProximityPrompt
+
+    -- ตั้งค่า HoldDuration เป็น 0
+    proximityPrompt.HoldDuration = 0
+
+    while true do
+        if proximityPrompt.Enabled then
+            -- จำลองการกดปุ่ม
+            proximityPrompt:InputHoldBegin() -- เริ่มการโต้ตอบ            
+            proximityPrompt:InputHoldEnd() -- จบการโต้ตอบ
+        end
+        wait()  -- รอ  วินาทีก่อนทำงานอีกครั้ง
+    end
+end
+
+-- เรียกใช้งานฟังก์ชันในเธรดแยก
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1, 39, 347, 0, 0, 1, 0, 1, -0, -1, 0, 0)
+wait()
+task.spawn(triggerProximityPrompts)
+task.spawn(teleportToCursedItems)
+task.spawn(simulatePromptPress)
+wait(3)
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- กำหนด CFrame ที่ต้องการวาปไป
+local targetCFrame = CFrame.new(-1.4683218, 41.3965836, 339.983795, -0.999480903, -9.52012513e-08, 0.0322163962, -9.56681845e-08, 1, -1.29523121e-08, -0.0322163962, -1.60276734e-08, -0.999480903)
+
+-- วาปไปยัง CFrame ที่กำหนด
+humanoidRootPart.CFrame = targetCFrame
+
+-- ตั้งมุมกล้องหันลงพื้น
+workspace.CurrentCamera.CFrame = CFrame.new(targetCFrame.Position, targetCFrame.Position - Vector3.new(0, 1, 0))
+        end  
+	})
+
+OrionLib:Init()
