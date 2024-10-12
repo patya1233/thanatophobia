@@ -717,7 +717,12 @@ local Section = bTab:AddSection({
 bTab:AddButton({
 	Name = "Auto Win",
 	Callback = function()
-game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(201.907791, 4.00000048, 436.806244, -0.998111129, -1.11416902e-07, 0.0614342913, -1.09989955e-07, 1, 2.66089391e-08, -0.0614342913, 1.9801524e-08, -0.998111129)
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local doorFrame = workspace.ExitDoor.DoorFrame
+
+-- วาร์ปตัวละครไปยังตำแหน่งของ DoorFrame
+character:SetPrimaryPartCFrame(doorFrame.CFrame)
         end  
 	})
 
