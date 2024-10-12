@@ -637,9 +637,54 @@ workspace.CurrentCamera.CFrame = CFrame.new(targetCFrame.Position, targetCFrame.
         end  
 	})
 
+bTab:AddButton({
+	Name = "tp to exit(Beware of monsters)",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-117.616135, 32, 241.515457, 0.0261901375, 3.07127013e-09, 0.999656975, -2.53002952e-09, 1, -3.00603942e-09, -0.999656975, -2.45043319e-09, 0.0261901375)
+        end  
+	})
+
 local Section = bTab:AddSection({
 	Name = "ESP"
 })
+
+bTab:AddButton({
+	Name = "esp item",
+	Callback = function()
+local function createESPBox(part, size)
+    local espBox = Instance.new("BoxHandleAdornment")
+    espBox.Name = "ESPBox"
+    espBox.Size = size or part.Size -- ใช้ขนาดที่กำหนดหรือขนาดเดิม
+    espBox.Adornee = part
+    espBox.Color3 = Color3.fromRGB(0, 255, 0) -- สีเขียว
+    espBox.Transparency = 0.5 -- โปร่งใส 50%
+    espBox.ZIndex = 10 -- จัดอันดับการแสดงผล
+    espBox.AlwaysOnTop = true
+    espBox.Parent = part
+end
+
+local function updateESP(size)
+    for i = 1, 4 do
+        local cursedItem = workspace.CurseBurnPuzzle.Items["Cursed" .. i]
+        
+        if cursedItem then
+            -- ลบ ESP Box ที่มีอยู่แล้ว
+            local existingESP = cursedItem:FindFirstChild("ESPBox")
+            if existingESP then
+                existingESP:Destroy()
+            end
+            
+            -- เพิ่ม ESP Box ใหม่
+            createESPBox(cursedItem, size)
+        end
+    end
+end
+
+-- ปรับขนาดของ ESP Box ที่ต้องการ
+local desiredSize = Vector3.new(2, 2, 2) -- เปลี่ยนเป็นขนาดที่ต้องการ
+updateESP(desiredSize)
+        end  
+	})
 
 bTab:AddButton({
 	Name = "esp Monster",
