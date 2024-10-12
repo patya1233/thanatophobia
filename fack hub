@@ -710,4 +710,54 @@ end
         end  
 	})
 
+local Section = bTab:AddSection({
+	Name = "Part4"
+})
+
+bTab:AddButton({
+	Name = "Auto Win",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(201.907791, 4.00000048, 436.806244, -0.998111129, -1.11416902e-07, 0.0614342913, -1.09989955e-07, 1, 2.66089391e-08, -0.0614342913, 1.9801524e-08, -0.998111129)
+        end  
+	})
+
+local Section = bTab:AddSection({
+	Name = "ESP"
+})
+
+bTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local monsters = workspace.Monsters
+
+for _, model in ipairs(monsters:GetChildren()) do
+    if model:IsA("Model") then
+        -- ลบ Highlight ที่มีอยู่แล้ว
+        local existingHighlight = model:FindFirstChildOfClass("Highlight")
+        if existingHighlight then
+            existingHighlight:Destroy()
+        end
+        
+        -- สร้าง Highlight ใหม่
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = model
+        highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    end
+end
+        end  
+	})
+
+local Section = bTab:AddSection({
+	Name = "Part5"
+})
+
+bTab:AddButton({
+	Name = "Auto Win",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-15.5, 26, -268.899963, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+        end  
+	})
+
 OrionLib:Init()
