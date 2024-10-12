@@ -621,7 +621,7 @@ wait()
 task.spawn(triggerProximityPrompts)
 task.spawn(teleportToCursedItems)
 task.spawn(simulatePromptPress)
-wait(3)
+wait(2.5)
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
