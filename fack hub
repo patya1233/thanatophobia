@@ -1020,7 +1020,7 @@ local function teleportAndLookAtGem(gemName)
         character:SetPrimaryPartCFrame(newCFrame)
 
         -- หันกล้องไปที่อัญมณี
-        camera.CFrame = CFrame.new(newCFrame.Position + Vector3.new(0, 2, 5), newCFrame.Position) -- หันไปที่อัญมณี
+        camera.CFrame = CFrame.new(newCFrame.Position + Vector3.new(0, 2, -5), newCFrame.Position) -- หันไปที่อัญมณี
     else
         warn(gemName .. " not found!")
     end
