@@ -1039,7 +1039,7 @@ local camera = game.Workspace.CurrentCamera -- เข้าถึงกล้อ
 local function teleportAndLookAtGem(gemName)
     local gem = workspace.GemPlacePuzzle.Items:FindFirstChild(gemName)
     if gem then
-        local newCFrame = gem.CFrame + Vector3.new(0, 2, -4) -- เพิ่มความสูง 2 หน่วย
+        local newCFrame = gem.CFrame + Vector3.new(0, 2, -6) -- เพิ่มความสูง 2 หน่วย
         character:SetPrimaryPartCFrame(newCFrame)
 
         -- หันกล้องไปที่อัญมณี
