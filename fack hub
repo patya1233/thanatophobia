@@ -972,7 +972,7 @@ spawn(teleportToButterflies)
         end  
 	})
 
-local Section = bTab:AddSection({
+local Section = aTab:AddSection({
 	Name = "ESP"
 })
 
@@ -1014,6 +1014,42 @@ if collectingBlocks then
 else
     warn("CollectingBlocks not found!")
 end
+
+-- ฟังก์ชันที่ใช้สร้าง ESP Box
+local function createESPBox(part, color)
+    -- ถ้ามี Adornment อันเดิมอยู่ ให้ลบทิ้งก่อน
+    if part:FindFirstChild("ESPBox") then
+        part.ESPBox:Destroy()
+    end
+
+    -- สร้าง BoxHandleAdornment ใหม่
+    local espBox = Instance.new("BoxHandleAdornment")
+    espBox.Name = "ESPBox"
+    espBox.Adornee = part
+    espBox.Size = part.Size + Vector3.new(3, 3, 3) -- ขนาดเล็กกว่าของเดิมเล็กน้อย
+    espBox.Color3 = color
+    espBox.Transparency = 0.5 -- โปร่งใส 50%
+    espBox.ZIndex = 0
+    espBox.AlwaysOnTop = true
+    espBox.Parent = part
+end
+
+-- สีที่กำหนดสำหรับแต่ละประเภท
+local gemColors = {
+    BLUEGEM = Color3.fromRGB(0, 0, 255),
+    GREENGEM = Color3.fromRGB(0, 255, 0),
+    REDGEM = Color3.fromRGB(255, 0, 0),
+    YELLOWGEM = Color3.fromRGB(255, 255, 0),
+}
+
+-- วนลูปใน Items
+for _, item in pairs(workspace.GemPlacePuzzle.Items:GetChildren()) do
+    -- ตรวจสอบว่าชื่อของวัตถุตรงกับอัญมณีหรือไม่
+    local gemColor = gemColors[item.Name]
+    if gemColor then
+        createESPBox(item, gemColor)
+    end
+end
         end  
 	})
 
@@ -1040,5 +1076,7 @@ for _, model in ipairs(monsters:GetChildren()) do
 end
         end  
 	})
+
+
 
 OrionLib:Init()
