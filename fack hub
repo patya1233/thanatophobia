@@ -1027,11 +1027,11 @@ local function teleportAndLookAtGem(gemName)
 end
 
 -- วาร์ปไปยังอัญมณีที่แตกต่างและมองไปที่มัน
-teleportAndLookAtGem("BLUEGEM")
+task.spawn(teleportAndLookAtGem("BLUEGEM"))
 wait(0.5) -- รอ 1 วินาทีเพื่อให้เห็นการวาร์ป
-teleportAndLookAtGem("GREENGEM")
+task.spawn(teleportAndLookAtGem("GREENGEM"))
 wait(0.5)
-teleportAndLookAtGem("REDGEM")
+task.spawn(teleportAndLookAtGem("REDGEM"))
 wait(0.5)
 teleportAndLookAtGem("YELLOWGEM")
 wait(2.5)
