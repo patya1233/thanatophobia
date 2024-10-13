@@ -9,6 +9,29 @@ OrionLib:MakeNotification({
 	TimeTime
 	})
 
+local fackTab = Window:MakeTab({
+	Name = "Main",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+	})
+
+fackTab:AddButton({
+	Name = "Brightness",
+	Callback = function()
+			-- สคริปต์นี้จะทำให้เห็นชัดในที่มืด (Fulbright)
+
+local lighting = game:GetService("Lighting")
+
+-- ตั้งค่าให้เป็น Fulbright
+lighting.Ambient = Color3.fromRGB(255, 255, 255) -- ทำให้ทุกอย่างสว่าง
+lighting.Brightness = 10 -- เพิ่มความสว่างโดยรวม
+lighting.GlobalShadows = false -- ปิดเงาทั้งหมด
+lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255) -- ทำให้ข้างนอกสว่าง
+
+print("Fulbright mode activated")
+  	end  
+	})
+
 local cTab = Window:MakeTab({
 	Name = "book1 chapter1",
 	Icon = "rbxassetid://4483345998",
