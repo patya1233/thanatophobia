@@ -956,7 +956,7 @@ local function teleportToButterflies()
                 -- เปลี่ยนมุมกล้องให้หันไปที่พื้น
                 camera.CFrame = CFrame.new(humanoidRootPart.Position + Vector3.new(0, 5, 0), humanoidRootPart.Position)
 
-                wait(0.3) -- รอ 1 วินาทีก่อนจะไปที่ตัวถัดไป (สามารถปรับได้)
+                wait(0.5) -- รอ 1 วินาทีก่อนจะไปที่ตัวถัดไป (สามารถปรับได้)
             end
         end
         
@@ -1001,7 +1001,7 @@ local function holdPrompts()
         for _, prompt in ipairs(prompts) do
             simulateHold(prompt) -- เรียกใช้งานการจำลองการกดสำหรับแต่ละอัญมณี
         end
-        wait(0.5) -- รอ 1 วินาทีก่อนที่จะเริ่มใหม่เพื่อหลีกเลี่ยงการทำงานเร็วเกินไป
+        wait(0.3) -- รอ 1 วินาทีก่อนที่จะเริ่มใหม่เพื่อหลีกเลี่ยงการทำงานเร็วเกินไป
     end
 end
 
@@ -1016,11 +1016,11 @@ local camera = game.Workspace.CurrentCamera -- เข้าถึงกล้อ
 local function teleportAndLookAtGem(gemName)
     local gem = workspace.GemPlacePuzzle.Items:FindFirstChild(gemName)
     if gem then
-        local newCFrame = gem.CFrame + Vector3.new(0, 2, -3) -- เพิ่มความสูง 2 หน่วย
+        local newCFrame = gem.CFrame + Vector3.new(0, 2, -4) -- เพิ่มความสูง 2 หน่วย
         character:SetPrimaryPartCFrame(newCFrame)
 
         -- หันกล้องไปที่อัญมณี
-        camera.CFrame = CFrame.new(newCFrame.Position + Vector3.new(0, 2, -4), newCFrame.Position) -- หันไปที่อัญมณี
+        camera.CFrame = CFrame.new(newCFrame.Position + Vector3.new(0, 2, 5), newCFrame.Position) -- หันไปที่อัญมณี
     else
         warn(gemName .. " not found!")
     end
@@ -1034,6 +1034,8 @@ wait(0.5)
 teleportAndLookAtGem("REDGEM")
 wait(0.5)
 teleportAndLookAtGem("YELLOWGEM")
+wait(2.5)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(379.585968, 422.999969, 45.5686951, 0.00450586155, -4.63511363e-08, 0.999989867, -2.32169146e-08, 1, 4.64562184e-08, -0.999989867, -2.34260042e-08, 0.00450586155)
         end  
 	})
 
