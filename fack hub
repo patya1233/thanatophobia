@@ -1359,7 +1359,7 @@ game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(163.9637
 	})
 
 aTab:AddButton({
-	Name = "ปรับระยะใหกดไกลขึ้น",
+	Name = "Auto skull collector",
 	Callback = function()
 local prompts = {
     workspace.Monsters.BlackEmperor.Skull.ProximityPrompt,
@@ -1368,11 +1368,72 @@ local prompts = {
     workspace.Monsters.WhiteEmperor.Skull.ProximityPrompt
 }
 
-for _, prompt in ipairs(prompts) do
-    prompt.HoldDuration = 0
-    prompt.MaxActivationDistance = 100
-    prompt.RequiresLineOfSight = false
+-- ฟังก์ชันสำหรับปรับตั้งค่าทุก ProximityPrompt และจำลองการกด
+local function setupProximityPrompts()
+    while true do
+        for _, prompt in ipairs(prompts) do
+            -- ปรับระยะเวลาการกด, ระยะการกด และให้สามารถกดทะลุได้
+            prompt.HoldDuration = 0
+            prompt.MaxActivationDistance = 100
+            prompt.RequiresLineOfSight = false
+
+            -- จำลองการกด ProximityPrompt
+            prompt:InputHoldBegin()  -- เริ่มการกด
+            wait(prompt.HoldDuration)  -- รอเวลาตามที่ตั้งค่าไว้ (ในกรณีนี้คือ 0 วินาที)
+            prompt:InputHoldEnd()  -- จบการกด
+        end
+        wait()  -- รอ 1 วินาทีก่อนเริ่มวนลูปใหม่
+    end
 end
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local camera = game.Workspace.CurrentCamera
+
+-- การกำหนดตำแหน่งของมอนสเตอร์แต่ละตัว
+local blackEmperor = workspace.Monsters.BlackEmperor
+local greenEmperor = workspace.Monsters.GreenEmperor
+local pinkEmperor = workspace.Monsters.PinkEmperor
+local whiteEmperor = workspace.Monsters.WhiteEmperor
+
+-- ฟังก์ชันวาปไปยังมอนสเตอร์ที่เลือก
+local function teleportTo(monster)
+    if monster and monster:FindFirstChild("HumanoidRootPart") then
+        -- วาปตัวละครไปยังตำแหน่งมอนสเตอร์
+        local targetCFrame = monster.HumanoidRootPart.CFrame * CFrame.new(0, 13.5, 0)
+        character:SetPrimaryPartCFrame(targetCFrame)
+
+        -- ปรับมุมกล้องให้หันลงพื้นก่อน
+        local cameraPosition = targetCFrame.p + Vector3.new(0, 10, 0) -- ตำแหน่งกล้องอยู่เหนือมอนสเตอร์
+        local lookAt = targetCFrame.p -- ให้กล้องหันไปที่ตำแหน่งมอนสเตอร์
+        camera.CFrame = CFrame.new(cameraPosition, lookAt)
+
+        -- รอสักครู่แล้วหันไปข้างหน้าในทิศทางที่ตัวละครหัน
+        wait(0.5)
+        local forwardDirection = targetCFrame.LookVector -- ทิศทางข้างหน้าที่ตัวละครหัน
+        local newCameraPosition = cameraPosition + forwardDirection * 10 -- กล้องหันไปข้างหน้าห่างออกไป 10 หน่วย
+        camera.CFrame = CFrame.new(cameraPosition, newCameraPosition)
+    else
+        warn("Monster or HumanoidRootPart not found")
+    end
+end
+
+-- ฟังก์ชันสำหรับวาปไปยังมอนสเตอร์แต่ละตัว
+local function teleportToMonsters()
+    teleportTo(blackEmperor)
+    wait(0.5)
+    teleportTo(greenEmperor)
+    wait(0.5)
+    teleportTo(pinkEmperor)
+    wait(0.5)
+    teleportTo(whiteEmperor)
+end
+
+-- เริ่มต้นการทำงานพร้อมกัน
+coroutine.wrap(setupProximityPrompts)()  -- เริ่มทำงานที่ ProximityPrompt
+coroutine.wrap(teleportToMonsters)()    -- เริ่มทำงานที่การวาปไปยังมอนสเตอร์
+wait(4.5)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(163.963791, 3.99999952, -163.084808, 0.999253511, -7.43797344e-08, -0.0386318341, 7.53854152e-08, 1, 2.45758311e-08, 0.0386318341, -2.74697634e-08, 0.999253511)
         end  
 	})
 
