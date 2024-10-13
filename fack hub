@@ -1156,12 +1156,112 @@ local Section = aTab:AddSection({
 aTab:AddButton({
 	Name = "Auto win",
 	Callback = function()
-game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-26.0897751, 10.9999981, -177.591217, -6.10864299e-05, -1.60063907e-09, -1, 1.01135619e-07, 1, -1.60681712e-09, 1, -1.01135711e-07, -6.10864299e-05)
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local exitTrigger = workspace.GameInfo.ExitTrigger
+
+-- ตรวจสอบว่า ExitTrigger มีอยู่จริง
+if exitTrigger then
+    -- ปรับตำแหน่งถอยหลังนิดหน่อย (แกน Z)
+    local newCFrame = exitTrigger.CFrame * CFrame.new(-3, 0, 0)
+    
+    -- เปลี่ยนตำแหน่งผู้เล่นไปยังตำแหน่งที่ถอยหลังจาก ExitTrigger
+    character:SetPrimaryPartCFrame(newCFrame)
+else
+    warn("ExitTrigger ไม่พบใน Workspace")
+end
+        end  
+	})
+
+aTab:AddButton({
+	Name = "ปรับระยะใหกดไกลขึ้น",
+	Callback = function()
+local greenPrompt = workspace.Monsters.GreenEmperor.Skull.ProximityPrompt
+local pinkPrompt = workspace.Monsters.PinkEmperor.Skull.ProximityPrompt
+local whitePrompt = workspace.Monsters.WhiteEmperor.Skull.ProximityPrompt
+
+-- ปรับการตั้งค่าสำหรับ Green Emperor
+greenPrompt.HoldDuration = 0
+greenPrompt.MaxActivationDistance = 100
+greenPrompt.RequiresLineOfSight = false
+
+-- ปรับการตั้งค่าสำหรับ Pink Emperor
+pinkPrompt.HoldDuration = 0
+pinkPrompt.MaxActivationDistance = 100
+pinkPrompt.RequiresLineOfSight = false
+
+-- ปรับการตั้งค่าสำหรับ White Emperor
+whitePrompt.HoldDuration = 0
+whitePrompt.MaxActivationDistance = 100
+whitePrompt.RequiresLineOfSight = false
         end  
 	})
 
 local Section = aTab:AddSection({
 	Name = "ESP"
 })
+
+aTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local monsters = workspace.Monsters
+
+for _, model in ipairs(monsters:GetChildren()) do
+    if model:IsA("Model") then
+        -- ลบ Highlight ที่มีอยู่แล้ว
+        local existingHighlight = model:FindFirstChildOfClass("Highlight")
+        if existingHighlight then
+            existingHighlight:Destroy()
+        end
+        
+        -- สร้าง Highlight ใหม่
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = model
+        highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    end
+end
+
+-- ฟังก์ชันสำหรับการสร้าง ESP Text
+function createESPText(monster, text, textColor)
+    -- ตรวจสอบว่า ESP Text อันเก่ามีหรือไม่ ถ้ามีลบทิ้ง
+    if monster:FindFirstChild("ESPText") then
+        monster.ESPText:Destroy()
+    end
+
+    -- สร้าง BillboardGui สำหรับ ESP Text
+    local esp = Instance.new("BillboardGui")
+    esp.Name = "ESPText"
+    esp.Adornee = monster:FindFirstChild("Head") or monster:FindFirstChild("HumanoidRootPart")
+    esp.Size = UDim2.new(0, 25, 0, 25)
+    esp.StudsOffset = Vector3.new(0, 2, 0)
+    esp.AlwaysOnTop = true
+
+    -- สร้าง TextLabel สำหรับแสดงข้อความ
+    local textLabel = Instance.new("TextLabel", esp)
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = text
+    textLabel.TextColor3 = textColor -- เปลี่ยนสีข้อความที่นี่
+    textLabel.TextScaled = true
+
+    -- นำ BillboardGui ไปใส่ใน Monster
+    esp.Parent = monster
+end
+
+-- สร้าง ESP Text ให้กับ BlackEmperor
+createESPText(workspace.Monsters.BlackEmperor, "Black", Color3.fromRGB(255, 255, 255)) -- ข้อความสีขาว
+
+-- สร้าง ESP Text ให้กับ GreenEmperor
+createESPText(workspace.Monsters.GreenEmperor, "Green", Color3.fromRGB(255, 255, 255)) -- ข้อความสีขาว
+
+-- สร้าง ESP Text ให้กับ PinkEmperor
+createESPText(workspace.Monsters.PinkEmperor, "Pink", Color3.fromRGB(255, 255, 255)) -- ข้อความสีขาว
+
+-- สร้าง ESP Text ให้กับ WhiteEmperor
+createESPText(workspace.Monsters.WhiteEmperor, "White", Color3.fromRGB(255, 255, 255)) -- ข้อความสีขาว
+        end  
+	})
 
 OrionLib:Init()
