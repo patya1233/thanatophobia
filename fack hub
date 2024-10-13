@@ -1149,6 +1149,19 @@ addHighlight() -- เรียกใช้ฟังก์ชันเพื่�
         end  
 	})
 
+local Section = aTab:AddSection({
+	Name = "Part2"
+})
 
+aTab:AddButton({
+	Name = "Auto win",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-26.0897751, 10.9999981, -177.591217, -6.10864299e-05, -1.60063907e-09, -1, 1.01135619e-07, 1, -1.60681712e-09, 1, -1.01135711e-07, -6.10864299e-05)
+        end  
+	})
+
+local Section = aTab:AddSection({
+	Name = "ESP"
+})
 
 OrionLib:Init()
