@@ -896,4 +896,137 @@ addNewESP()
         end  
 	})
 
+local aTab = Window:MakeTab({
+	Name = "book1 chapter3",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+	})
+
+aTab:AddButton({
+	Name = "Auto Butterfly Collector",
+	Callback = function()
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local collectingBlocksFolder = workspace:WaitForChild("CollectingBlocks")
+local camera = game.Workspace.CurrentCamera
+
+-- ฟังก์ชันเพื่อเก็บ ProximityPrompt รอบ ๆ ผู้เล่น
+local function collectNearbyPrompts()
+    local collectingBlocks = workspace.CollectingBlocks:GetChildren()
+
+    while true do
+        for i = 1, math.min(18, #collectingBlocks) do
+            local prompt = collectingBlocks[i]:FindFirstChild("ProximityPrompt")
+            if prompt then
+                prompt.MaxActivationDistance = 15  -- เพิ่มระยะการกดเป็น 15
+                prompt.RequiresLineOfSight = false
+                -- ตรวจสอบระยะห่างระหว่างผู้เล่นกับ ProximityPrompt
+                local distance = (character.HumanoidRootPart.Position - prompt.Parent.Position).Magnitude
+                if distance <= prompt.MaxActivationDistance then
+                    prompt.HoldDuration = 0  -- ตั้งค่า HoldDuration เป็น 0
+                    prompt:InputHoldBegin()  -- เริ่มการเก็บ
+                    prompt:InputHoldEnd()    -- ยืนยันการเก็บ
+                end
+            end
+        end
+        wait(0.1)  -- ตรวจสอบซ้ำทุก 0.1 วินาที
+    end
+end
+
+-- ฟังก์ชันเพื่อวาร์ปไปที่ Butterfly ทีละอัน
+local function teleportToButterflies()
+    while true do
+        local hasButterflies = false
+        
+        for _, butterfly in pairs(collectingBlocksFolder:GetChildren()) do
+            if butterfly:IsA("MeshPart") and butterfly.Name == "Butterfly" then
+                hasButterflies = true
+                -- วาร์ปไปยังตำแหน่งของ Butterfly โดยเพิ่มความสูง 5 หน่วย
+                humanoidRootPart.CFrame = butterfly.CFrame + Vector3.new(0, 2, 0)
+                
+                -- เปลี่ยนมุมกล้องให้หันไปที่พื้น
+                camera.CFrame = CFrame.new(humanoidRootPart.Position + Vector3.new(0, 5, 0), humanoidRootPart.Position)
+
+                wait(0.5) -- รอ 1 วินาทีก่อนจะไปที่ตัวถัดไป (สามารถปรับได้)
+            end
+        end
+        
+        if not hasButterflies then
+            break -- ออกจากลูปถ้าไม่มี Butterfly
+        end
+    end
+end
+
+-- เรียกใช้ทั้งสองฟังก์ชันพร้อมกัน
+spawn(collectNearbyPrompts)
+spawn(teleportToButterflies)
+        end  
+	})
+
+aTab:AddButton({
+	Name = "esp item",
+	Callback = function()
+-- Function to create an ESP box
+local function createESPBox(part, size)
+    -- Remove existing ESP box if it exists
+    if part:FindFirstChild("ESPBox") then
+        part.ESPBox:Destroy()
+    end
+
+    -- Create a new ESP box
+    local box = Instance.new("BoxHandleAdornment")
+    box.Name = "ESPBox"
+    box.Adornee = part
+    box.AlwaysOnTop = true
+    box.ZIndex = 10
+    box.Size = size -- Vector3.new(x, y, z) ปรับขนาดตามที่ต้องการ
+    box.Color3 = Color3.new(0, 1, 0) -- สีเขียว
+    box.Transparency = 0.5 -- โปร่งใส 50%
+    box.Parent = part
+end
+
+-- Get the CollectingBlocks from workspace
+local collectingBlocks = workspace:FindFirstChild("CollectingBlocks")
+
+-- Check if CollectingBlocks exists
+if collectingBlocks then
+    -- Loop through all the children in CollectingBlocks
+    for _, child in pairs(collectingBlocks:GetChildren()) do
+        -- Check if the child is named "Butterfly"
+        if child.Name == "Butterfly" and child:IsA("BasePart") then
+            -- Call the function to add the ESP box
+            createESPBox(child, Vector3.new(2, 2, 2)) -- ปรับขนาดตามต้องการ
+        end
+    end
+else
+    warn("CollectingBlocks not found!")
+end
+        end  
+	})
+
+aTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local monsters = workspace.Monsters
+
+for _, model in ipairs(monsters:GetChildren()) do
+    if model:IsA("Model") then
+        -- ลบ Highlight ที่มีอยู่แล้ว
+        local existingHighlight = model:FindFirstChildOfClass("Highlight")
+        if existingHighlight then
+            existingHighlight:Destroy()
+        end
+        
+        -- สร้าง Highlight ใหม่
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = model
+        highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    end
+end
+        end  
+	})
+
 OrionLib:Init()
