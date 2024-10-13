@@ -902,9 +902,17 @@ local aTab = Window:MakeTab({
 	PremiumOnly = false
 	})
 
+local Section = aTab:AddSection({
+	Name = "Part1"
+})
+
 aTab:AddButton({
 	Name = "Auto Butterfly Collector",
 	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(947.60553, 434.032623, -170.475616, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(377.894531, 434.032654, 65.4756317, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+wait()
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
