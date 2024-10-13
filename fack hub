@@ -956,7 +956,7 @@ local function teleportToButterflies()
                 -- เปลี่ยนมุมกล้องให้หันไปที่พื้น
                 camera.CFrame = CFrame.new(humanoidRootPart.Position + Vector3.new(0, 5, 0), humanoidRootPart.Position)
 
-                wait(0.5) -- รอ 1 วินาทีก่อนจะไปที่ตัวถัดไป (สามารถปรับได้)
+                wait(0.2) -- รอ 1 วินาทีก่อนจะไปที่ตัวถัดไป (สามารถปรับได้)
             end
         end
         
@@ -1243,6 +1243,97 @@ end
 local Section = aTab:AddSection({
 	Name = "Part3"
 })
+
+aTab:AddButton({
+	Name = "Auto pull lever",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(165.589478, 8.35844994, -158.301468, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(167.189499, 8.35845947, -159.300919, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(167.189499, 8.35845947, -160.300919, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+wait()
+local levers = {
+    workspace.SkullPlacePuzzle.FirstPart.BlackLever.Lever1.ProximityPrompt,
+    workspace.SkullPlacePuzzle.FirstPart.GreenLever.Lever1.ProximityPrompt,
+    workspace.SkullPlacePuzzle.FirstPart.PinkLever.Lever1.ProximityPrompt,
+    workspace.SkullPlacePuzzle.FirstPart.WhiteLever.Lever1.ProximityPrompt
+}
+
+local ProximityPromptService = game:GetService("ProximityPromptService")
+
+-- ฟังก์ชันสำหรับการกด Lever
+local function pressLevers()
+    while true do
+        for _, prompt in ipairs(levers) do
+            prompt.HoldDuration = 0
+            prompt:InputHoldBegin()
+            
+            prompt:InputHoldEnd()
+        end
+        wait() -- รอระยะเวลาก่อนวนซ้ำอีกรอบ
+    end
+end
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local camera = workspace.CurrentCamera -- เข้าถึงกล้อง
+
+-- ฟังก์ชันสำหรับลบบล็อกชื่อ "fack" หากมีอยู่
+local function removeOldBlock()
+    local oldBlock = workspace:FindFirstChild("fack")
+    if oldBlock then
+        oldBlock:Destroy() -- ลบบล็อกเก่า
+    end
+end
+
+-- ฟังก์ชันวาร์ปไปยังตำแหน่งของ Lever แล้วถอยหลังเล็กน้อย
+local function teleportToLever(lever)
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        local targetPart = lever.PrimaryPart or lever:FindFirstChildWhichIsA("BasePart")
+        if targetPart then
+            character.HumanoidRootPart.CFrame = targetPart.CFrame * CFrame.new(5, 0, 0)
+            camera.CFrame = CFrame.new(targetPart.Position + Vector3.new(0, 5, 0), targetPart.Position)
+
+            removeOldBlock()
+
+            local block = Instance.new("Part")
+            block.Name = "fack" -- ตั้งชื่อบล็อกเป็น "fack"
+            block.Size = Vector3.new(4, 1, 4) -- ขนาดของบล็อก
+            block.Position = character.HumanoidRootPart.Position - Vector3.new(0, 3, 0) -- ให้บล็อกอยู่ใต้ผู้เล่น
+            block.Anchored = true -- ป้องกันไม่ให้บล็อกเคลื่อนที่
+            block.Parent = workspace -- เพิ่มบล็อกลงใน workspace
+
+            character.HumanoidRootPart.CFrame = block.CFrame * CFrame.new(0, 1, 0) -- ปรับตำแหน่งให้ยืนบนบล็อก
+        else
+            warn("No valid part found in lever: " .. lever.Name)
+        end
+    end
+end
+
+-- รายชื่อ Lever ที่ต้องวาร์ปไป
+local leversToTeleport = {
+    workspace.SkullPlacePuzzle.FirstPart.BlackLever,
+    workspace.SkullPlacePuzzle.FirstPart.GreenLever,
+    workspace.SkullPlacePuzzle.FirstPart.PinkLever,
+    workspace.SkullPlacePuzzle.FirstPart.WhiteLever
+}
+
+-- ฟังก์ชันสำหรับการวาร์ปไปยังแต่ละ Lever
+local function teleportToLevers()
+    for _, lever in ipairs(leversToTeleport) do
+        teleportToLever(lever)
+        wait(0.5)  -- รอ 0.5 วินาทีก่อนการวาร์ปไป Lever ถัดไป
+    end
+end
+
+-- สร้าง coroutine เพื่อให้ทั้งสองฟังก์ชันทำงานพร้อมกัน
+coroutine.wrap(pressLevers)()
+coroutine.wrap(teleportToLevers)()
+wait(2.5)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(163.963791, 3.99999952, -163.084808, 0.999253511, -7.43797344e-08, -0.0386318341, 7.53854152e-08, 1, 2.45758311e-08, 0.0386318341, -2.74697634e-08, 0.999253511)
+        end  
+	})
 
 aTab:AddButton({
 	Name = "ปรับระยะใหกดไกลขึ้น",
