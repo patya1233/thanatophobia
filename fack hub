@@ -956,7 +956,7 @@ local function teleportToButterflies()
                 -- เปลี่ยนมุมกล้องให้หันไปที่พื้น
                 camera.CFrame = CFrame.new(humanoidRootPart.Position + Vector3.new(0, 5, 0), humanoidRootPart.Position)
 
-                wait(0.5) -- รอ 1 วินาทีก่อนจะไปที่ตัวถัดไป (สามารถปรับได้)
+                wait(0.3) -- รอ 1 วินาทีก่อนจะไปที่ตัวถัดไป (สามารถปรับได้)
             end
         end
         
@@ -969,6 +969,71 @@ end
 -- เรียกใช้ทั้งสองฟังก์ชันพร้อมกัน
 spawn(collectNearbyPrompts)
 spawn(teleportToButterflies)
+        end  
+	})
+
+aTab:AddButton({
+	Name = "Auto Gem Collector",
+	Callback = function()
+local prompts = {
+    workspace.GemPlacePuzzle.Items.BLUEGEM.ProximityPrompt,
+    workspace.GemPlacePuzzle.Items.GREENGEM.ProximityPrompt,
+    workspace.GemPlacePuzzle.Items.REDGEM.ProximityPrompt,
+    workspace.GemPlacePuzzle.Items.YELLOWGEM.ProximityPrompt,
+}
+
+-- ปรับระยะเวลาการกดของ ProximityPrompt ทุกอันเป็น 0 วินาที
+for _, prompt in ipairs(prompts) do
+    prompt.HoldDuration = 0 -- ตั้งระยะเวลาการกดเป็น 0 วินาที
+end
+
+-- ฟังก์ชันสำหรับจำลองการกด
+local function simulateHold(prompt)
+    prompt:InputHoldBegin() -- เริ่มการเก็บ
+    
+    prompt:InputHoldEnd() -- สิ้นสุดการเก็บ
+end
+
+-- ฟังก์ชันสำหรับการจำลองการกด
+local function holdPrompts()
+    -- วนลูปไม่สิ้นสุด
+    while true do
+        for _, prompt in ipairs(prompts) do
+            simulateHold(prompt) -- เรียกใช้งานการจำลองการกดสำหรับแต่ละอัญมณี
+        end
+        wait(0.5) -- รอ 1 วินาทีก่อนที่จะเริ่มใหม่เพื่อหลีกเลี่ยงการทำงานเร็วเกินไป
+    end
+end
+
+-- เริ่มต้นการทำงานของฟังก์ชัน holdPrompts ในเธรดแยก
+task.spawn(holdPrompts)
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local camera = game.Workspace.CurrentCamera -- เข้าถึงกล้องปัจจุบัน
+
+-- ฟังก์ชันสำหรับการวาร์ปไปยังอัญมณีที่ระบุพร้อมทั้งมองไปที่อัญมณี
+local function teleportAndLookAtGem(gemName)
+    local gem = workspace.GemPlacePuzzle.Items:FindFirstChild(gemName)
+    if gem then
+        local newCFrame = gem.CFrame + Vector3.new(0, 2, -3) -- เพิ่มความสูง 2 หน่วย
+        character:SetPrimaryPartCFrame(newCFrame)
+
+        -- หันกล้องไปที่อัญมณี
+        camera.CFrame = CFrame.new(newCFrame.Position + Vector3.new(0, 2, -4), newCFrame.Position) -- หันไปที่อัญมณี
+    else
+        warn(gemName .. " not found!")
+    end
+end
+
+-- วาร์ปไปยังอัญมณีที่แตกต่างและมองไปที่มัน
+teleportAndLookAtGem("BLUEGEM")
+wait(0.5) -- รอ 1 วินาทีเพื่อให้เห็นการวาร์ป
+teleportAndLookAtGem("GREENGEM")
+wait(0.5)
+teleportAndLookAtGem("REDGEM")
+wait(0.5)
+teleportAndLookAtGem("YELLOWGEM")
         end  
 	})
 
