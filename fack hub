@@ -1121,24 +1121,29 @@ end
 aTab:AddButton({
 	Name = "esp Monster",
 	Callback = function()
-local monsters = workspace.Monsters
+local monster = workspace.Monster["Tenticle Monster"]
 
-for _, model in ipairs(monsters:GetChildren()) do
-    if model:IsA("Model") then
-        -- ลบ Highlight ที่มีอยู่แล้ว
-        local existingHighlight = model:FindFirstChildOfClass("Highlight")
-        if existingHighlight then
-            existingHighlight:Destroy()
+-- ฟังก์ชันสำหรับลบ Highlight เก่า
+local function removeOldHighlight()
+    for _, child in ipairs(monster:GetChildren()) do
+        if child:IsA("Highlight") then
+            child:Destroy()
         end
-        
-        -- สร้าง Highlight ใหม่
-        local highlight = Instance.new("Highlight")
-        highlight.Parent = model
-        highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีแดง
-        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
-        highlight.FillTransparency = 0.5 -- โปร่งใส 50%
     end
 end
+
+-- ฟังก์ชันสำหรับเพิ่ม Highlight ใหม่
+local function addHighlight()
+    removeOldHighlight() -- ลบ Highlight เก่า
+
+    local highlight = Instance.new("Highlight") -- สร้าง Highlight ใหม่
+    highlight.Parent = monster -- เพิ่ม Highlight ไปที่ Monster
+    highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- เส้นขอบสีแดง
+    highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีภายในเป็นสีแดง
+    highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+end
+
+addHighlight() -- เรียกใช้ฟังก์ชันเพื่อเพิ่ม Highlight
         end  
 	})
 
