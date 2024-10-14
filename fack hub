@@ -1568,6 +1568,13 @@ local Section = aTab:AddSection({
 })
 
 aTab:AddButton({
+	Name = "Auto Win",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-275.100006, 9.5, -207, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+        end  
+	})
+
+aTab:AddButton({
 	Name = "esp item",
 	Callback = function()
 -- Function สำหรับเพิ่ม Highlights
@@ -1665,6 +1672,59 @@ for _, leverName in ipairs(levers) do
         textLabel.Font = Enum.Font.SourceSansBold
     end
 end
+
+-- สร้างฟังก์ชันสำหรับเพิ่ม ESP
+local function addESP(part)
+    -- ตรวจสอบว่า ESP เดิมมีอยู่ไหม ถ้ามีก็ลบทิ้ง
+    local existingESP = part:FindFirstChild("ESP")
+    if existingESP then
+        existingESP:Destroy()
+    end
+
+    -- สร้าง ESP ใหม่
+    local esp = Instance.new("BillboardGui")
+    esp.Name = "ESP"
+    esp.Size = UDim2.new(0, 25, 0, 25)
+    esp.Adornee = part
+    esp.AlwaysOnTop = true -- ตั้งค่า AlwaysOnTop เป็น true
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.Text = "Key"
+    textLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- สีเขียว
+    textLabel.BackgroundTransparency = 1 -- ไม่แสดงพื้นหลัง
+    textLabel.Parent = esp
+
+    esp.Parent = part
+end
+
+-- สร้างฟังก์ชันสำหรับเพิ่ม Highlight
+local function addHighlight(part)
+    -- ตรวจสอบว่า Highlight เดิมมีอยู่ไหม ถ้ามีก็ลบทิ้ง
+    local existingHighlight = part:FindFirstChild("Highlight")
+    if existingHighlight then
+        existingHighlight:Destroy()
+    end
+
+    -- สร้าง Highlight ใหม่
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "Highlight"
+    highlight.Adornee = part
+    highlight.FillColor = Color3.fromRGB(0, 255, 0) -- สีเขียว
+    highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    highlight.OutlineColor = Color3.fromRGB(0, 255, 0) -- สีเส้นขอบสีเขียว
+    highlight.OutlineTransparency = 0 -- เส้นขอบทึบ
+
+    -- เพิ่ม Highlight ไปยัง part
+    highlight.Parent = part
+end
+
+-- หยิบ KeyG จาก Workspace
+local keyG = workspace.HidingPart.KeyG
+
+-- เรียกใช้ฟังก์ชันเพื่อเพิ่ม ESP และ Highlight ให้กับ KeyG
+addESP(keyG)
+addHighlight(keyG)
         end  
 	})
 
@@ -1701,6 +1761,28 @@ for _, folder in ipairs(enemyEmperorFolders) do
         end
     end
 end
+
+local shizuko = workspace.HidingPart.Shizuko
+
+-- ฟังก์ชันสำหรับเพิ่ม Highlight
+local function addHighlight()
+    -- ตรวจสอบว่า Shizuko มี Highlight อยู่หรือไม่
+    for _, child in pairs(shizuko:GetChildren()) do
+        if child:IsA("Highlight") then
+            child:Destroy()  -- ลบ Highlight เดิม
+        end
+    end
+
+    -- สร้าง Highlight ใหม่
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = shizuko
+    highlight.FillColor = Color3.new(1, 0, 0) -- สีแดง
+    highlight.FillTransparency = 0.5 -- ความโปร่งใส 50%
+    highlight.OutlineColor = Color3.new(1, 0, 0) -- เส้นขอบสีแดง
+end
+
+-- เรียกใช้ฟังก์ชัน
+addHighlight()
         end  
 	})
 
