@@ -1563,4 +1563,145 @@ createESPText(workspace.Monsters.WhiteEmperor, "White", Color3.fromRGB(255, 255,
         end  
 	})
 
+local Section = aTab:AddSection({
+	Name = "Part4"
+})
+
+aTab:AddButton({
+	Name = "esp item",
+	Callback = function()
+-- Function สำหรับเพิ่ม Highlights
+local function addHighlight(part)
+    -- ถ้ามี Highlights อยู่แล้ว ให้ลบออกก่อน
+    if part:FindFirstChildOfClass("Highlight") then
+        part:FindFirstChildOfClass("Highlight"):Destroy()
+    end
+
+    -- สร้าง Highlights ใหม่
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = part
+    highlight.FillColor = Color3.new(0, 1, 0)  -- สีเขียวข้างใน
+    highlight.FillTransparency = 0.5  -- โปร่งใส 50%
+    highlight.OutlineColor = Color3.new(0, 1, 0)  -- เส้นขอบสีเขียว
+end
+
+-- Function สำหรับเพิ่ม ESP text
+local function addEspText(part, displayName)
+    -- ถ้ามี ESP (BillboardGui) อยู่แล้ว ให้ลบออกก่อน
+    if part:FindFirstChild("ESP") then
+        part:FindFirstChild("ESP"):Destroy()
+    end
+
+    -- สร้าง BillboardGui ใหม่
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "ESP"
+    billboardGui.Size = UDim2.new(0, 25, 0, 25)  -- ขนาดของ Gui
+    billboardGui.StudsOffset = Vector3.new(0, 2, 0)  -- ยกให้สูงขึ้นเหนือวัตถุ
+    billboardGui.AlwaysOnTop = true
+    billboardGui.Parent = part
+
+    -- สร้าง TextLabel สำหรับแสดงชื่อ
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Text = displayName  -- ชื่อที่จะให้แสดง
+    textLabel.TextColor3 = Color3.new(0, 1, 0)  -- สีเขียว
+    textLabel.BackgroundTransparency = 1  -- พื้นหลังโปร่งใส
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.Parent = billboardGui
+end
+
+-- ฟังก์ชันหลักสำหรับเพิ่ม Highlight และ ESP text
+local function addHighlightAndEsp(part, displayName)
+    addHighlight(part)  -- เพิ่ม Highlight
+    addEspText(part, displayName)  -- เพิ่ม ESP text
+end
+
+-- เพิ่ม Highlight และ ESP ให้กับ Key1G ถึง Key4G
+addHighlightAndEsp(workspace.KeyRoomSector.Key1G, "Key1")
+addHighlightAndEsp(workspace.KeyRoomSector.Key2G, "Key2")
+addHighlightAndEsp(workspace.KeyRoomSector.Key3G, "Key3")
+addHighlightAndEsp(workspace.KeyRoomSector.Key4G, "Key4")
+
+local levers = {"Lever1", "Lever2", "Lever3", "Lever4", "Lever5"}
+
+for _, leverName in ipairs(levers) do
+    local lever = workspace.LeverPuzzle:FindFirstChild(leverName)
+
+    if lever then
+        -- ลบ Highlights อันเดิมถ้ามี
+        local oldHighlight = lever:FindFirstChildOfClass("Highlight")
+        if oldHighlight then
+            oldHighlight:Destroy()
+        end
+
+        -- สร้าง Highlights ใหม่
+        local newHighlight = Instance.new("Highlight")
+        newHighlight.Parent = lever
+        newHighlight.FillColor = Color3.new(0, 1, 0) -- สีเขียว
+        newHighlight.FillTransparency = 0.5 -- ความโปร่งใส 50%
+        newHighlight.OutlineColor = Color3.new(0, 1, 0) -- สีขอบเขียว
+
+        -- ลบ BillboardGui อันเดิมถ้ามี
+        local oldBillboard = lever:FindFirstChildOfClass("BillboardGui")
+        if oldBillboard then
+            oldBillboard:Destroy()
+        end
+
+        -- สร้าง BillboardGui ใหม่
+        local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Parent = lever
+        billboardGui.Adornee = lever
+        billboardGui.Size = UDim2.new(0, 25, 0, 25)
+        billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+        billboardGui.AlwaysOnTop = true
+
+        -- สร้าง TextLabel เพื่อแสดงชื่อ Lever
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Parent = billboardGui
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = leverName
+        textLabel.TextColor3 = Color3.new(0, 1, 0) -- สีเขียว
+        textLabel.TextScaled = true
+        textLabel.Font = Enum.Font.SourceSansBold
+    end
+end
+        end  
+	})
+
+aTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local enemyEmperorFolders = workspace.LeverPuzzle.Monsters:GetChildren()
+
+-- กำหนดชื่อโฟลเดอร์ที่ต้องการ
+local targetFolderNames = {
+    "EnemyEmperor", -- แทนที่ด้วยชื่อโฟลเดอร์ที่คุณต้องการ
+}
+
+for _, folder in ipairs(enemyEmperorFolders) do
+    if folder:IsA("Folder") and table.find(targetFolderNames, folder.Name) then
+        for _, model in ipairs(folder:GetChildren()) do
+            if model:IsA("Model") then
+                -- ลบ Highlights เดิมถ้ามี
+                local existingHighlight = model:FindFirstChildOfClass("Highlight")
+                if existingHighlight then
+                    existingHighlight:Destroy()
+                end
+                
+                -- สร้าง Highlights ใหม่
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "Highlight"
+                highlight.Adornee = model
+                highlight.FillColor = Color3.new(1, 0, 0) -- สีแดง
+                highlight.FillTransparency = 0.5 -- ความโปร่งใส 50%
+                highlight.OutlineColor = Color3.new(1, 0, 0) -- สีเส้นขอบแดง
+                highlight.OutlineTransparency = 0 -- ไม่ให้โปร่งใส
+                highlight.Parent = model
+            end
+        end
+    end
+end
+        end  
+	})
+
 OrionLib:Init()
