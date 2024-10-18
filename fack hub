@@ -1968,6 +1968,37 @@ game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-18.0326
         end  
 	})
 
+aTab:AddButton({
+	Name = "show code",
+	Callback = function()
+local Players = game:GetService("Players")
+
+-- ค่าที่เก็บข้อความจาก TextLabel
+local paintingNote = workspace.CandlePuzzle.PaintingNote.SurfaceGui.TextLabel
+local message = paintingNote.Text
+
+-- สร้าง ScreenGui และ TextLabel ใหม่
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = playerGui
+
+local textLabel = Instance.new("TextLabel")
+textLabel.Size = UDim2.new(0, 25, 0, 25) -- ขนาดของ TextLabel
+textLabel.Position = UDim2.new(0.5, 0, 0.5, -50) -- ตำแหน่งกลางหน้าจอ
+textLabel.Text = message -- กำหนดข้อความจาก TextLabel
+textLabel.TextSize = 24 -- ขนาดตัวอักษร
+textLabel.BackgroundTransparency = 1 -- ทำให้พื้นหลังโปร่งใส
+textLabel.TextColor3 = Color3.new(0, 1, 0) -- สีตัวอักษร (สีขาว)
+textLabel.Parent = screenGui
+
+-- ลบ UI หลังจาก 5 วินาที
+wait(5)
+screenGui:Destroy()
+        end  
+	})
+
 local Section = aTab:AddSection({
 	Name = "ESP"
 })
@@ -2009,6 +2040,107 @@ if collectingBlocks then
     end
 else
     warn("CollectingBlocks not found!")
+end
+
+-- ฟังก์ชันสำหรับการสร้าง Highlight ใหม่
+local function addHighlight(object)
+    -- ลบ Highlight ที่มีอยู่แล้ว (ถ้ามี)
+    if object:FindFirstChildOfClass("Highlight") then
+        object:FindFirstChildOfClass("Highlight"):Destroy()
+    end
+
+    -- สร้าง Highlight ใหม่
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = object
+    highlight.FillColor = Color3.fromRGB(0, 255, 0) -- สีเขียว
+    highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    highlight.OutlineColor = Color3.fromRGB(0, 255, 0) -- สีเส้นขอบเขียว
+end
+
+-- ฟังก์ชันสำหรับการสร้าง ESP Text ใหม่
+local function addESPText(object)
+    -- ลบ BillboardGui ที่มีอยู่แล้ว (ถ้ามี)
+    if object:FindFirstChildOfClass("BillboardGui") then
+        object:FindFirstChildOfClass("BillboardGui"):Destroy()
+    end
+
+    -- สร้าง BillboardGui ใหม่
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Parent = object
+    billboardGui.Name = "ESPText"
+    billboardGui.Adornee = object
+    billboardGui.Size = UDim2.new(0, 25, 0, 25)  -- ขนาดของ GUI
+    billboardGui.StudsOffset = Vector3.new(0, 2, 0)  -- ระยะยกขึ้นจากโมเดล
+    billboardGui.AlwaysOnTop = true  -- ให้อยู่ด้านบนเสมอ
+
+    -- สร้าง TextLabel สำหรับแสดงชื่อ
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = billboardGui
+    textLabel.Size = UDim2.new(1, 0, 1, 0)  -- ให้กินพื้นที่ทั้งหมดของ BillboardGui
+    textLabel.BackgroundTransparency = 1  -- พื้นหลังโปร่งใส
+    textLabel.Text = object.Name  -- ชื่อของโมเดล
+    textLabel.TextColor3 = Color3.fromRGB(0, 255, 0)  -- สีเขียว
+    textLabel.TextScaled = true  -- ปรับขนาดข้อความอัตโนมัติ
+end
+
+-- วนลูปผ่าน KATANA1 ถึง KATANA4 และเพิ่มทั้ง Highlight และ ESP Text
+for i = 1, 4 do
+    local katana = workspace.KatanaPlacePuzzle.Items:FindFirstChild("KATANA"..i)
+    if katana then
+        addHighlight(katana)
+        addESPText(katana)
+    end
+end
+
+local candles = {
+    workspace.CandlePuzzle.Candles.CandleBLACK,
+    workspace.CandlePuzzle.Candles.CandleBLUE,
+    workspace.CandlePuzzle.Candles.CandleBROWN,
+    workspace.CandlePuzzle.Candles.CandleGREEN,
+    workspace.CandlePuzzle.Candles.CandlePINK,
+    workspace.CandlePuzzle.Candles.CandleRED,
+    workspace.CandlePuzzle.Candles.CandleWHITE,
+    workspace.CandlePuzzle.Candles.CandleYELLOW
+}
+
+for _, candle in ipairs(candles) do
+    -- ลบ Highlights เดิมถ้ามีอยู่
+    local existingHighlight = candle:FindFirstChildOfClass("Highlight")
+    if existingHighlight then
+        existingHighlight:Destroy()
+    end
+
+    -- สร้าง Highlights ใหม่
+    local highlight = Instance.new("Highlight")
+    highlight.Adornee = candle
+    highlight.OutlineColor = Color3.fromRGB(0, 255, 0) -- เส้นขอบสีเขียว
+    highlight.FillColor = Color3.fromRGB(0, 255, 0) -- สีเขียวโปร่งใส
+    highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    highlight.Parent = candle
+
+    -- ลบ ESP Text เดิมถ้ามีอยู่
+    local existingESP = candle:FindFirstChild("ESPText")
+    if existingESP then
+        existingESP:Destroy()
+    end
+
+    -- สร้าง ESP Text ใหม่
+    local espText = Instance.new("BillboardGui")
+    espText.Name = "ESPText"
+    espText.Size = UDim2.new(0, 25, 0, 25)
+    espText.Adornee = candle
+    espText.AlwaysOnTop = true
+    espText.StudsOffset = Vector3.new(0, 2, 0) -- ปรับความสูงขึ้น (1.5 studs)
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = candle.Name:gsub("Candle", "") -- ตัด "Candle" ออก
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- สีขาว
+    textLabel.TextScaled = true
+    textLabel.Parent = espText
+
+    espText.Parent = candle
 end
         end  
 	})
