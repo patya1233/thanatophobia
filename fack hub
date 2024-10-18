@@ -1574,6 +1574,10 @@ game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-275.100
         end  
 	})
 
+local Section = aTab:AddSection({
+	Name = "ESP"
+})
+
 aTab:AddButton({
 	Name = "esp item",
 	Callback = function()
@@ -1783,6 +1787,253 @@ end
 
 -- เรียกใช้ฟังก์ชัน
 addHighlight()
+        end  
+	})
+
+local Section = aTab:AddSection({
+	Name = "Part5"
+})
+
+aTab:AddButton({
+	Name = "Auto Butterfly Collector",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-17.7572784, 7.89684677, -124.63176, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-16.4260674, 7.9803772, -181.594467, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+wait()
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local collectingBlocksFolder = workspace:WaitForChild("CollectingBlocks")
+local camera = game.Workspace.CurrentCamera
+
+-- ฟังก์ชันเพื่อเก็บ ProximityPrompt รอบ ๆ ผู้เล่น
+local function collectNearbyPrompts()
+    local collectingBlocks = workspace.CollectingBlocks:GetChildren()
+
+    while true do
+        for i = 1, math.min(18, #collectingBlocks) do
+            local prompt = collectingBlocks[i]:FindFirstChild("ProximityPrompt")
+            if prompt then
+                prompt.MaxActivationDistance = 15  -- เพิ่มระยะการกดเป็น 15
+                prompt.RequiresLineOfSight = false
+                -- ตรวจสอบระยะห่างระหว่างผู้เล่นกับ ProximityPrompt
+                local distance = (character.HumanoidRootPart.Position - prompt.Parent.Position).Magnitude
+                if distance <= prompt.MaxActivationDistance then
+                    prompt.HoldDuration = 0  -- ตั้งค่า HoldDuration เป็น 0
+                    prompt:InputHoldBegin()  -- เริ่มการเก็บ
+                    prompt:InputHoldEnd()    -- ยืนยันการเก็บ
+                end
+            end
+        end
+        wait(0.1)  -- ตรวจสอบซ้ำทุก 0.1 วินาที
+    end
+end
+
+-- ฟังก์ชันเพื่อวาร์ปไปที่ Butterfly ทีละอัน
+local function teleportToButterflies()
+    while true do
+        local hasButterflies = false
+        
+        for _, butterfly in pairs(collectingBlocksFolder:GetChildren()) do
+            if butterfly:IsA("MeshPart") and butterfly.Name == "Butterfly" then
+                hasButterflies = true
+                -- วาร์ปไปยังตำแหน่งของ Butterfly โดยเพิ่มความสูง 5 หน่วย
+                humanoidRootPart.CFrame = butterfly.CFrame + Vector3.new(0, 2, 0)
+                
+                -- เปลี่ยนมุมกล้องให้หันไปที่พื้น
+                camera.CFrame = CFrame.new(humanoidRootPart.Position + Vector3.new(0, 5, 0), humanoidRootPart.Position)
+
+                wait(0.2) -- รอ 1 วินาทีก่อนจะไปที่ตัวถัดไป (สามารถปรับได้)
+            end
+        end
+        
+        if not hasButterflies then
+            break -- ออกจากลูปถ้าไม่มี Butterfly
+        end
+    end
+end
+
+-- เรียกใช้ทั้งสองฟังก์ชันพร้อมกัน
+spawn(collectNearbyPrompts)
+spawn(teleportToButterflies)
+wait(2.6)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-18.0326385, 3.99999952, -113.275917, 0.99999994, -1.83379605e-08, 0.000248265918, 1.83290396e-08, 1, 3.59377594e-08, -0.000248265918, -3.59332084e-08, 0.99999994)
+        end  
+	})
+
+aTab:AddButton({
+	Name = "Auto collect katana",
+	Callback = function()
+local katanaItems = workspace.KatanaPlacePuzzle.Items
+
+-- ปรับระยะเวลา HoldDuration ให้เป็น 0
+for i = 1, 4 do
+    local katana = katanaItems:FindFirstChild("KATANA" .. i)
+    if katana then
+        local proximityPrompt = katana:FindFirstChildOfClass("ProximityPrompt")
+        if proximityPrompt then
+            proximityPrompt.HoldDuration = 0  -- ปรับ HoldDuration ให้เป็น 0
+        end
+    end
+end
+
+-- ฟังก์ชันจำลองการกด ProximityPrompt
+local function simulateProximityPrompt()
+    while true do
+        for i = 1, 4 do
+            local katana = katanaItems:FindFirstChild("KATANA" .. i)
+            if katana then
+                local proximityPrompt = katana:FindFirstChildOfClass("ProximityPrompt")
+                if proximityPrompt then
+                    -- จำลองการเริ่มการกด
+                    proximityPrompt:InputHoldBegin()
+                    -- จำลองการสิ้นสุดการกด
+                    proximityPrompt:InputHoldEnd()
+                end
+            end
+        end
+        wait()  -- รอเวลาหลังจากจบลูปก่อนเริ่มใหม่
+    end
+end
+
+-- ฟังก์ชันการกด ProximityPrompt อย่างต่อเนื่อง
+local function continuousProximityPrompt()
+    local prompt = workspace.KatanaPlacePuzzle.KatanaTrigger.ProximityPrompt
+    prompt.HoldDuration = 0
+
+    while true do
+        -- จำลองการกด ProximityPrompt
+        prompt:InputHoldBegin()
+        prompt:InputHoldEnd()
+        wait() -- รอ 1 วิก่อนจะทำใหม่
+    end
+end
+
+-- ฟังก์ชันวาปไปยังดาบ
+local function teleportToKatanas()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local camera = workspace.CurrentCamera
+
+    -- รายการตำแหน่งของดาบ
+    local katanaList = {
+        workspace.KatanaPlacePuzzle.Items.KATANA1,
+        workspace.KatanaPlacePuzzle.Items.KATANA2,
+        workspace.KatanaPlacePuzzle.Items.KATANA3,
+        workspace.KatanaPlacePuzzle.Items.KATANA4
+    }
+
+    for _, katana in ipairs(katanaList) do
+        -- วาปไปยังตำแหน่งของดาบแต่ละอัน และเพิ่มความสูงในแกน Y ขึ้น 1.5 หน่วย
+        local targetPosition = katana.CFrame * CFrame.new(0, 1.5, 0)
+        character:SetPrimaryPartCFrame(targetPosition)
+
+        -- ปรับกล้องให้หันลงพื้น
+        camera.CFrame = CFrame.new(camera.CFrame.Position, camera.CFrame.Position + Vector3.new(0, -1, 0))
+
+        wait(0.5) -- รอ 1 วินาทีก่อนวาปไปยังดาบถัดไป
+    end
+end
+
+-- ฟังก์ชันวาปไปยัง KatanaTrigger
+local function teleportToKatanaTrigger()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local camera = game.Workspace.CurrentCamera
+
+    -- ตรวจสอบว่า KatanaTrigger มีอยู่ใน Workspace หรือไม่
+    local katanaTrigger = workspace:FindFirstChild("KatanaPlacePuzzle"):FindFirstChild("KatanaTrigger")
+
+    if katanaTrigger then
+        -- ตั้งค่า CFrame ให้กับตัวละครเพื่อวาปไปยัง KatanaTrigger
+        local offset = Vector3.new(0, 2, 5)
+        character:SetPrimaryPartCFrame(katanaTrigger.CFrame + offset)
+
+        -- ตั้งมุมกล้องให้หันไปหาตำแหน่งของ KatanaTrigger
+        camera.CFrame = CFrame.new(camera.CFrame.Position, katanaTrigger.Position)
+    else
+        warn("ไม่พบ KatanaTrigger ใน Workspace")
+    end
+end
+
+-- เริ่มทำงานของแต่ละฟังก์ชันใน coroutine
+coroutine.wrap(simulateProximityPrompt)()
+coroutine.wrap(continuousProximityPrompt)()
+coroutine.wrap(teleportToKatanas)()
+wait(2.3)
+coroutine.wrap(teleportToKatanaTrigger)()
+wait(1.5)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-18.0326385, 3.99999952, -113.275917, 0.99999994, -1.83379605e-08, 0.000248265918, 1.83290396e-08, 1, 3.59377594e-08, -0.000248265918, -3.59332084e-08, 0.99999994)
+        end  
+	})
+
+local Section = aTab:AddSection({
+	Name = "ESP"
+})
+
+aTab:AddButton({
+	Name = "esp item",
+	Callback = function()
+-- Function to create an ESP box
+local function createESPBox(part, size)
+    -- Remove existing ESP box if it exists
+    if part:FindFirstChild("ESPBox") then
+        part.ESPBox:Destroy()
+    end
+
+    -- Create a new ESP box
+    local box = Instance.new("BoxHandleAdornment")
+    box.Name = "ESPBox"
+    box.Adornee = part
+    box.AlwaysOnTop = true
+    box.ZIndex = 10
+    box.Size = size -- Vector3.new(x, y, z) ปรับขนาดตามที่ต้องการ
+    box.Color3 = Color3.new(0, 1, 0) -- สีเขียว
+    box.Transparency = 0.5 -- โปร่งใส 50%
+    box.Parent = part
+end
+
+-- Get the CollectingBlocks from workspace
+local collectingBlocks = workspace:FindFirstChild("CollectingBlocks")
+
+-- Check if CollectingBlocks exists
+if collectingBlocks then
+    -- Loop through all the children in CollectingBlocks
+    for _, child in pairs(collectingBlocks:GetChildren()) do
+        -- Check if the child is named "Butterfly"
+        if child.Name == "Butterfly" and child:IsA("BasePart") then
+            -- Call the function to add the ESP box
+            createESPBox(child, Vector3.new(2, 2, 2)) -- ปรับขนาดตามต้องการ
+        end
+    end
+else
+    warn("CollectingBlocks not found!")
+end
+        end  
+	})
+
+aTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local monsters = workspace.Monsters
+
+for _, model in ipairs(monsters:GetChildren()) do
+    if model:IsA("Model") then
+        -- ลบ Highlight ที่มีอยู่แล้ว
+        local existingHighlight = model:FindFirstChildOfClass("Highlight")
+        if existingHighlight then
+            existingHighlight:Destroy()
+        end
+        
+        -- สร้าง Highlight ใหม่
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = model
+        highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    end
+end
         end  
 	})
 
