@@ -51,9 +51,9 @@ if v:IsA("MeshPart") then
 local prox = v:FindFirstChildOfClass("ProximityPrompt")
 player.CFrame = v.CFrame
 if prox then
-wait(0.2)
+wait(0.1)
 fireproximityprompt(prox)
-wait(0.2)
+wait(0.3)
 end
 end
 end
