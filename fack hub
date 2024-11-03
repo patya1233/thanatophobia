@@ -289,7 +289,7 @@ wait(0.2)
 end
 end
 end
-wait(4)
+wait(2)
 game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-713.5, 27.5, 947.5, 0, 0, -1, 0, 1, 0, 1, 0, 0)
         end  
 	})
@@ -422,7 +422,7 @@ for i, v in pairs(game.workspace.CurseBurnPuzzle.Items:GetDescendants()) do
         end
     end
 end
-wait(2.5)
+wait()
 local player = game.Players.LocalPlayer.Character.HumanoidRootPart
 for i, v in pairs(game.workspace.CurseBurnPuzzle:GetChildren()) do
     if v:IsA("Part") then
@@ -722,6 +722,12 @@ local Section = aTab:AddSection({
 aTab:AddButton({
 	Name = "Auto Butterfly Collector",
 	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(377.894531, 434.032654, 65.4756317, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(947.60553, 434.032623, -170.475616, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(377.894531, 434.032654, 65.4756317, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+wait()
 local player = game.Players.LocalPlayer.Character.HumanoidRootPart
 for i, v in pairs(game.workspace.CollectingBlocks:GetDescendants()) do
 if v:IsA("MeshPart") then
@@ -730,77 +736,68 @@ player.CFrame = v.CFrame
 if prox then
 wait(0.2)
 fireproximityprompt(prox)
-wait(0.2)
+wait(0.5)
 end
 end
 end
+wait()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.GemPlacePuzzle.Items:GetDescendants()) do
+    if v:IsA("MeshPart") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+            wait(0.2)
+        end
+    end
+end
+wait()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.GemPlacePuzzle:GetChildren()) do
+    if v:IsA("Part") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.2)
+            fireproximityprompt(prox)
+            wait(0.5)
+        end
+    end
+end
+-- game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(378.707916, 423, 63.3105049, -0.0521781258, -2.83837522e-08, -0.998637795, 5.6591059e-08, 1, -3.13793116e-08, 0.998637795, -5.81512829e-08, -0.0521781258)
         end  
 	})
 
 aTab:AddButton({
 	Name = "Auto Gem Collector",
 	Callback = function()
-local prompts = {
-    workspace.GemPlacePuzzle.Items.BLUEGEM.ProximityPrompt,
-    workspace.GemPlacePuzzle.Items.GREENGEM.ProximityPrompt,
-    workspace.GemPlacePuzzle.Items.REDGEM.ProximityPrompt,
-    workspace.GemPlacePuzzle.Items.YELLOWGEM.ProximityPrompt,
-}
-
--- ปรับระยะเวลาการกดของ ProximityPrompt ทุกอันเป็น 0 วินาที
-for _, prompt in ipairs(prompts) do
-    prompt.HoldDuration = 0 -- ตั้งระยะเวลาการกดเป็น 0 วินาที
-end
-
--- ฟังก์ชันสำหรับจำลองการกด
-local function simulateHold(prompt)
-    prompt:InputHoldBegin() -- เริ่มการเก็บ
-    
-    prompt:InputHoldEnd() -- สิ้นสุดการเก็บ
-end
-
--- ฟังก์ชันสำหรับการจำลองการกด
-local function holdPrompts()
-    -- วนลูปไม่สิ้นสุด
-    while true do
-        for _, prompt in ipairs(prompts) do
-            simulateHold(prompt) -- เรียกใช้งานการจำลองการกดสำหรับแต่ละอัญมณี
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.GemPlacePuzzle.Items:GetDescendants()) do
+    if v:IsA("MeshPart") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+            wait(0.2)
         end
-        wait() -- รอ 1 วินาทีก่อนที่จะเริ่มใหม่เพื่อหลีกเลี่ยงการทำงานเร็วเกินไป
     end
 end
-
--- เริ่มต้นการทำงานของฟังก์ชัน holdPrompts ในเธรดแยก
-task.spawn(holdPrompts)
-
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local camera = game.Workspace.CurrentCamera -- เข้าถึงกล้องปัจจุบัน
-
--- ฟังก์ชันสำหรับการวาร์ปไปยังอัญมณีที่ระบุพร้อมทั้งมองไปที่อัญมณี
-local function teleportAndLookAtGem(gemName)
-    local gem = workspace.GemPlacePuzzle.Items:FindFirstChild(gemName)
-    if gem then
-        local newCFrame = gem.CFrame + Vector3.new(0, 2, -6) -- เพิ่มความสูง 2 หน่วย
-        character:SetPrimaryPartCFrame(newCFrame)
-
-        -- หันกล้องไปที่อัญมณี
-        camera.CFrame = CFrame.new(newCFrame.Position + Vector3.new(0, 2, -5), newCFrame.Position) -- หันไปที่อัญมณี
-    else
-        warn(gemName .. " not found!")
+wait()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.GemPlacePuzzle:GetChildren()) do
+    if v:IsA("Part") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.2)
+            fireproximityprompt(prox)
+            wait(0.5)
+        end
     end
 end
-
--- วาร์ปไปยังอัญมณีที่แตกต่างและมองไปที่มัน
-teleportAndLookAtGem("BLUEGEM")
-wait(0.5) -- รอ 1 วินาทีเพื่อให้เห็นการวาร์ป
-teleportAndLookAtGem("GREENGEM")
-wait(0.5)
-teleportAndLookAtGem("REDGEM")
-wait(0.5)
-teleportAndLookAtGem("YELLOWGEM")
-wait(2.5)
-game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(379.585968, 422.999969, 45.5686951, 0.00450586155, -4.63511363e-08, 0.999989867, -2.32169146e-08, 1, 4.64562184e-08, -0.999989867, -2.34260042e-08, 0.00450586155)
         end  
 	})
 
