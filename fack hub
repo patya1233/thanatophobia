@@ -404,7 +404,11 @@ local Section = bTab:AddSection({
 bTab:AddButton({
 	Name = "Auto Butterfly Collector",
 	Callback = function()
-game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1, 39, 347, 0, 0, 1, 0, 1, -0, -1, 0, 0)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-31.6105347, 14.8584452, -161.501465, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(140.610535, 36.358448, 62.5014648, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(1.61053848, 35.5584526, 345.501465, -1, 0, 0, 0, 1, 0, 0, 0, -1)
 wait()
 local player = game.Players.LocalPlayer.Character.HumanoidRootPart
 for i, v in pairs(game.workspace.CurseBurnPuzzle.Items:GetDescendants()) do
