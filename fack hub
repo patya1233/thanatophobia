@@ -374,6 +374,10 @@ local Section = bTab:AddSection({
 bTab:AddButton({
 	Name = "Auto Win",
 	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(581.689453, 19.9584484, 477.498535, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(595.389465, 20.358448, 508.501465, -1, 0, 0, 0, 1, 0, 0, 0, -1)
+wait()
 while true do
 local player = game.Players.LocalPlayer.Character.HumanoidRootPart
 for i, v in pairs(game.workspace.MainPuzzle.FireLights:GetDescendants()) do
