@@ -45,62 +45,18 @@ local Section = cTab:AddSection({
 cTab:AddButton({
 	Name = "Auto Butterfly Collector",
 	Callback = function()
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-local collectingBlocksFolder = workspace:WaitForChild("CollectingBlocks")
-local camera = game.Workspace.CurrentCamera
-
--- ฟังก์ชันเพื่อเก็บ ProximityPrompt รอบ ๆ ผู้เล่น
-local function collectNearbyPrompts()
-    local collectingBlocks = workspace.CollectingBlocks:GetChildren()
-
-    while true do
-        for i = 1, math.min(16, #collectingBlocks) do
-            local prompt = collectingBlocks[i]:FindFirstChild("ProximityPrompt")
-            if prompt then
-                prompt.MaxActivationDistance = 15  -- เพิ่มระยะการกดเป็น 15
-                prompt.RequiresLineOfSight = false
-                -- ตรวจสอบระยะห่างระหว่างผู้เล่นกับ ProximityPrompt
-                local distance = (character.HumanoidRootPart.Position - prompt.Parent.Position).Magnitude
-                if distance <= prompt.MaxActivationDistance then
-                    prompt.HoldDuration = 0  -- ตั้งค่า HoldDuration เป็น 0
-                    prompt:InputHoldBegin()  -- เริ่มการเก็บ
-                    prompt:InputHoldEnd()    -- ยืนยันการเก็บ
-                end
-            end
-        end
-        wait(0.1)  -- ตรวจสอบซ้ำทุก 0.1 วินาที
-    end
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.CollectingBlocks:GetDescendants()) do
+if v:IsA("MeshPart") then
+local prox = v:FindFirstChildOfClass("ProximityPrompt")
+player.CFrame = v.CFrame
+if prox then
+wait(0.2)
+fireproximityprompt(prox)
+wait(0.2)
 end
-
--- ฟังก์ชันเพื่อวาร์ปไปที่ Butterfly ทีละอัน
-local function teleportToButterflies()
-    while true do
-        local hasButterflies = false
-        
-        for _, butterfly in pairs(collectingBlocksFolder:GetChildren()) do
-            if butterfly:IsA("MeshPart") and butterfly.Name == "Butterfly" then
-                hasButterflies = true
-                -- วาร์ปไปยังตำแหน่งของ Butterfly โดยเพิ่มความสูง 5 หน่วย
-                humanoidRootPart.CFrame = butterfly.CFrame + Vector3.new(0, 2, 0)
-                
-                -- เปลี่ยนมุมกล้องให้หันไปที่พื้น
-                camera.CFrame = CFrame.new(humanoidRootPart.Position + Vector3.new(0, 5, 0), humanoidRootPart.Position)
-
-                wait(0.5) -- รอ 1 วินาทีก่อนจะไปที่ตัวถัดไป (สามารถปรับได้)
-            end
-        end
-        
-        if not hasButterflies then
-            break -- ออกจากลูปถ้าไม่มี Butterfly
-        end
-    end
 end
-
--- เรียกใช้ทั้งสองฟังก์ชันพร้อมกัน
-spawn(collectNearbyPrompts)
-spawn(teleportToButterflies)
+end
         end  
 	})
 
