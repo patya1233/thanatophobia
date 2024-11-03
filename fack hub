@@ -374,114 +374,20 @@ local Section = bTab:AddSection({
 bTab:AddButton({
 	Name = "Auto Win",
 	Callback = function()
-game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(595.389465, 20.358448, 508.501465, -1, 0, 0, 0, 1, 0, 0, 0, -1)
-wait()
--- สร้างตัวแปรสำหรับอ้างอิงไปยัง ProximityPrompt
-local lights = {
-    workspace.MainPuzzle.FireLights.PuzzleLight1,
-    workspace.MainPuzzle.FireLights.PuzzleLight2,
-    workspace.MainPuzzle.FireLights.PuzzleLight3,
-    workspace.MainPuzzle.FireLights.PuzzleLight4,
-    workspace.MainPuzzle.FireLights.PuzzleLight5,
-    workspace.MainPuzzle.FireLights.PuzzleLight6,
-}
-
--- ฟังก์ชันสำหรับปรับระยะเวลาการกดของ ProximityPrompt
-local function adjustProximityPrompts()
-    for _, light in ipairs(lights) do
-        local proximityPrompt = light.LightPart:FindFirstChildOfClass("ProximityPrompt")
-        if proximityPrompt then
-            proximityPrompt.HoldDuration = 0 -- ปรับระยะเวลาการกดที่นี่
-        end
-    end
-end
-
--- ฟังก์ชันสำหรับจำลองการกดค้าง
-local function simulateInputHold()
-    while true do
-        for i = 1, 6 do
-            local prompt = workspace.MainPuzzle.FireLights["PuzzleLight" .. i].LightPart.ProximityPrompt
-            
-            if prompt then
-                prompt:InputHoldBegin()  -- จำลองการเริ่มการกด
-                prompt:InputHoldEnd()    -- จำลองการกดค้างเสร็จสิ้น
-            end
-            
-            wait() -- พักระหว่างการกดก่อนเริ่มใหม่
-        end
-    end
-end
-
-local player = game.Players.LocalPlayer
-local camera = workspace.CurrentCamera
-
-local lightsForTeleport = {
-    workspace.MainPuzzle.FireLights.PuzzleLight1["Cube.024"],
-    workspace.MainPuzzle.FireLights.PuzzleLight2["Cube.024"],
-    workspace.MainPuzzle.FireLights.PuzzleLight3["Cube.024"],
-    workspace.MainPuzzle.FireLights.PuzzleLight4["Cube.024"],
-    workspace.MainPuzzle.FireLights.PuzzleLight5["Cube.024"],
-    workspace.MainPuzzle.FireLights.PuzzleLight6["Cube.024"]
-}
-
--- ฟังก์ชันเพื่อหาค่าตำแหน่ง ProximityPrompt ที่ใกล้ที่สุด
-local function findClosestPrompt()
-    local closestPrompt = nil
-    local closestDistance = math.huge -- เริ่มต้นด้วยค่าระยะทางที่สูงสุด
-
-    for i = 1, 6 do
-        local puzzleLight = workspace.MainPuzzle.FireLights["PuzzleLight" .. i]
-        local proximityPrompt = puzzleLight.LightPart:FindFirstChild("ProximityPrompt")
-
-        if proximityPrompt then
-            local distance = (player.Character.HumanoidRootPart.Position - proximityPrompt.Parent.Position).magnitude
-
-            -- เช็คว่าตำแหน่งนี้ใกล้กว่าที่เรามีอยู่หรือไม่
-            if distance < closestDistance then
-                closestDistance = distance
-                closestPrompt = proximityPrompt
-            end
-        end
-    end
-
-    return closestPrompt
-end
-
--- ฟังก์ชันที่จะเปลี่ยนมุมกล้องไปหาตำแหน่งของ ProximityPrompt ที่ใกล้ที่สุด
-local function lookAtClosestPrompt()
-    local closestPrompt = findClosestPrompt()
-
-    if closestPrompt then
-        local targetPosition = closestPrompt.Parent.Position
-        camera.CFrame = CFrame.new(camera.CFrame.Position, targetPosition) -- หันกล้องไปหาตำแหน่ง
-    end
-end
-
--- ฟังก์ชันที่จะวาปไปยัง Cube.024 ทั้งหมด
-local function teleportToLights()
-    for _, light in ipairs(lightsForTeleport) do
-        if light then
-            -- วาปไปที่ตำแหน่งของ Cube.024 แต่เพิ่ม Y ขึ้น 10 หน่วย
-            local newCFrame = light.CFrame + Vector3.new(0, 10, 0)
-            player.Character.HumanoidRootPart.CFrame = newCFrame
+while true do
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.MainPuzzle.FireLights:GetDescendants()) do
+    if v:IsA("MeshPart") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.2)
+            fireproximityprompt(prox)
             wait(0.5)
-            
-            -- หันกล้องไปที่ ProximityPrompt ที่ใกล้ที่สุดหลังจากวาป
-            lookAtClosestPrompt()
-            wait(0.5) -- หยุดเวลาอีก 0.1 วินาทีก่อนที่จะทำซ้ำ
         end
     end
 end
-
--- เริ่มการทำงานพร้อมกัน
-task.spawn(adjustProximityPrompts)
-task.spawn(simulateInputHold)
-task.spawn(function()
-    while true do
-        teleportToLights()
-        wait(2) -- รอ 2 วินาทีก่อนที่จะเริ่มวนซ้ำใหม่
-    end
-end)
+end
         end  
 	})
 
@@ -492,85 +398,33 @@ local Section = bTab:AddSection({
 bTab:AddButton({
 	Name = "Auto Butterfly Collector",
 	Callback = function()
-local function triggerProximityPrompts()
-    while true do
-        for i = 1, 4 do
-            local proximityPrompt = workspace.CurseBurnPuzzle.Items["Cursed" .. i].ProximityPrompt
-            proximityPrompt.HoldDuration = 0 -- ปรับระยะเวลาเป็น 0 วินาที
-            proximityPrompt:InputHoldBegin() -- เริ่มการโต้ตอบ            
-            proximityPrompt:InputHoldEnd() -- จบการโต้ตอบ
-        end
-        wait(0.5) -- รอ  วินาทีก่อนเริ่มลูปใหม่
-    end
-end
-
--- ฟังก์ชันสำหรับวาปไปยังตำแหน่งของ Cursed1 ถึง Cursed4
-local function teleportToCursedItems()
-    local player = game.Players.LocalPlayer -- เปลี่ยนเป็น game.Players.ServerPlayer ถ้าอยู่ในสคริปต์เซิร์ฟเวอร์
-    local character = player.Character or player.CharacterAdded:Wait()
-    local camera = game.Workspace.CurrentCamera
-
-    -- รายการของ Cursed Items
-    local cursedItems = {
-        workspace.CurseBurnPuzzle.Items.Cursed1,
-        workspace.CurseBurnPuzzle.Items.Cursed2,
-        workspace.CurseBurnPuzzle.Items.Cursed3,
-        workspace.CurseBurnPuzzle.Items.Cursed4
-    }
-
-    for _, item in ipairs(cursedItems) do
-        -- เช็คว่ามีตำแหน่งของ item หรือไม่
-        if item and item:IsA("BasePart") then
-            -- วาปไปยังตำแหน่ง item โดยเพิ่มแกน Y ขึ้นไป 5 หน่วย
-            local newCFrame = item.CFrame * CFrame.new(0, 8, 0)
-
-            -- ตั้งค่า CFrame ของกล้องหันลง
-            camera.CFrame = newCFrame * CFrame.Angles(math.rad(-90), 0, 0)
-
-            -- วาปตัวละครไปยังตำแหน่ง item
-            character:SetPrimaryPartCFrame(newCFrame)
-            wait(0.5) -- รอ 0.5 วินาทีก่อนจะไปยัง item ถัดไป
-        end
-    end
-end
-
--- จำลองการกด ProximityPrompt
-local function simulatePromptPress()
-    local player = game.Players.LocalPlayer
-    local proximityPrompt = workspace.CurseBurnPuzzle.BurnTrigger.ProximityPrompt
-
-    -- ตั้งค่า HoldDuration เป็น 0
-    proximityPrompt.HoldDuration = 0
-
-    while true do
-        if proximityPrompt.Enabled then
-            -- จำลองการกดปุ่ม
-            proximityPrompt:InputHoldBegin() -- เริ่มการโต้ตอบ            
-            proximityPrompt:InputHoldEnd() -- จบการโต้ตอบ
-        end
-        wait()  -- รอ  วินาทีก่อนทำงานอีกครั้ง
-    end
-end
-
--- เรียกใช้งานฟังก์ชันในเธรดแยก
 game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1, 39, 347, 0, 0, 1, 0, 1, -0, -1, 0, 0)
 wait()
-task.spawn(triggerProximityPrompts)
-task.spawn(teleportToCursedItems)
-task.spawn(simulatePromptPress)
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.CurseBurnPuzzle.Items:GetDescendants()) do
+    if v:IsA("MeshPart") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.2)
+            fireproximityprompt(prox)
+            wait(0.5)
+        end
+    end
+end
 wait(2.5)
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
--- กำหนด CFrame ที่ต้องการวาปไป
-local targetCFrame = CFrame.new(-1.4683218, 41.3965836, 339.983795, -0.999480903, -9.52012513e-08, 0.0322163962, -9.56681845e-08, 1, -1.29523121e-08, -0.0322163962, -1.60276734e-08, -0.999480903)
-
--- วาปไปยัง CFrame ที่กำหนด
-humanoidRootPart.CFrame = targetCFrame
-
--- ตั้งมุมกล้องหันลงพื้น
-workspace.CurrentCamera.CFrame = CFrame.new(targetCFrame.Position, targetCFrame.Position - Vector3.new(0, 1, 0))
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.CurseBurnPuzzle:GetChildren()) do
+    if v:IsA("Part") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.2)
+            fireproximityprompt(prox)
+            wait(0.5)
+        end
+    end
+end
         end  
 	})
 
