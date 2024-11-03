@@ -273,7 +273,9 @@ local Section = bTab:AddSection({
 bTab:AddButton({
 	Name = "Auto Butterfly Collector",
 	Callback = function()
-game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-271.721771, 24.6775074, 511.479858, -0.999961138, 0.00881525408, -3.71956958e-05, 0.00876935292, 0.994306207, -0.106199071, -0.000899187289, -0.106195331, -0.99434489)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-239.089264, 20.3583469, 382.098572, -0.866007447, 0, 0.500031412, 0, 1, 0, -0.500031412, 0, -0.866007447)
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-271.721771, 24.6775074, 511.479858, -0.999961138, 0.00881525408, -3.71967908e-05, 0.00876935292, 0.994306207, -0.10619913, -0.000899187289, -0.106195331, -0.994344831)
 wait()
 local player = game.Players.LocalPlayer.Character.HumanoidRootPart
 for i, v in pairs(game.workspace.CollectingBlocks:GetDescendants()) do
