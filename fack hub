@@ -531,12 +531,18 @@ local Section = bTab:AddSection({
 bTab:AddButton({
 	Name = "Auto Win",
 	Callback = function()
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local doorFrame = workspace.ExitDoor.DoorFrame
-
--- วาร์ปตัวละครไปยังตำแหน่งของ DoorFrame
-character:SetPrimaryPartCFrame(doorFrame.CFrame)
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.ExitDoor:GetChildren()) do
+    if v:IsA("Part") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.2)
+            fireproximityprompt(prox)
+            wait(0.5)
+        end
+    end
+end
         end  
 	})
 
