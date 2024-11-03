@@ -741,32 +741,7 @@ end
 end
 end
 wait()
-local player = game.Players.LocalPlayer.Character.HumanoidRootPart
-for i, v in pairs(game.workspace.GemPlacePuzzle.Items:GetDescendants()) do
-    if v:IsA("MeshPart") then
-        local prox = v:FindFirstChildOfClass("ProximityPrompt")
-        player.CFrame = v.CFrame
-        if prox then
-            wait(0.5)
-            fireproximityprompt(prox)
-            wait(0.2)
-        end
-    end
-end
-wait()
-local player = game.Players.LocalPlayer.Character.HumanoidRootPart
-for i, v in pairs(game.workspace.GemPlacePuzzle:GetChildren()) do
-    if v:IsA("Part") then
-        local prox = v:FindFirstChildOfClass("ProximityPrompt")
-        player.CFrame = v.CFrame
-        if prox then
-            wait(0.2)
-            fireproximityprompt(prox)
-            wait(0.5)
-        end
-    end
-end
--- game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(378.707916, 423, 63.3105049, -0.0521781258, -2.83837522e-08, -0.998637795, 5.6591059e-08, 1, -3.13793116e-08, 0.998637795, -5.81512829e-08, -0.0521781258)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(378.707916, 423, 63.3105049, -0.0521781258, -2.83837522e-08, -0.998637795, 5.6591059e-08, 1, -3.13793116e-08, 0.998637795, -5.81512829e-08, -0.0521781258)
         end  
 	})
 
