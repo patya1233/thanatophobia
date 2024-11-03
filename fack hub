@@ -893,19 +893,17 @@ local Section = aTab:AddSection({
 aTab:AddButton({
 	Name = "Auto win",
 	Callback = function()
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local exitTrigger = workspace.GameInfo.ExitTrigger
-
--- ตรวจสอบว่า ExitTrigger มีอยู่จริง
-if exitTrigger then
-    -- ปรับตำแหน่งถอยหลังนิดหน่อย (แกน Z)
-    local newCFrame = exitTrigger.CFrame * CFrame.new(-3, 0, 0)
-    
-    -- เปลี่ยนตำแหน่งผู้เล่นไปยังตำแหน่งที่ถอยหลังจาก ExitTrigger
-    character:SetPrimaryPartCFrame(newCFrame)
-else
-    warn("ExitTrigger ไม่พบใน Workspace")
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.GameInfo:GetChildren()) do
+    if v:IsA("Part") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.2)
+            fireproximityprompt(prox)
+            wait(0.5)
+        end
+    end
 end
         end  
 	})
