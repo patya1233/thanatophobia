@@ -890,9 +890,8 @@ for i, v in pairs(game.workspace.GameInfo:GetChildren()) do
         local prox = v:FindFirstChildOfClass("ProximityPrompt")
         player.CFrame = v.CFrame
         if prox then
-            wait(0.2)
-            fireproximityprompt(prox)
             wait(0.5)
+            fireproximityprompt(prox)
         end
     end
 end
