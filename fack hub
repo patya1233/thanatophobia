@@ -1009,7 +1009,17 @@ for i, v in pairs(game.workspace.Monsters:GetChildren()) do
     end
 end
 wait()
-game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(163.963791, 3.99999952, -163.084808, 0.999253511, -7.43797344e-08, -0.0386318341, 7.53854152e-08, 1, 2.45758311e-08, 0.0386318341, -2.74697634e-08, 0.999253511)
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.SkullPlacePuzzle.SecondPart:GetDescendants()) do
+    if v:IsA("Part") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
         end  
 	})
 
