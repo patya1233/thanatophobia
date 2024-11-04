@@ -284,7 +284,6 @@ player.CFrame = v.CFrame
 if prox then
 wait(0.5)
 fireproximityprompt(prox)
-wait(0.2)
 end
 end
 end
@@ -386,9 +385,8 @@ for i, v in pairs(game.workspace.MainPuzzle.FireLights:GetDescendants()) do
         local prox = v:FindFirstChildOfClass("ProximityPrompt")
         player.CFrame = v.CFrame
         if prox then
-            wait(0.2)
-            fireproximityprompt(prox)
             wait(0.5)
+            fireproximityprompt(prox)
         end
     end
 end
@@ -415,9 +413,8 @@ for i, v in pairs(game.workspace.CurseBurnPuzzle.Items:GetDescendants()) do
         local prox = v:FindFirstChildOfClass("ProximityPrompt")
         player.CFrame = v.CFrame
         if prox then
-            wait(0.2)
-            fireproximityprompt(prox)
             wait(0.5)
+            fireproximityprompt(prox)
         end
     end
 end
@@ -441,9 +438,8 @@ for i, v in pairs(game.workspace.CurseBurnPuzzle.ExitDoor:GetChildren()) do
         local prox = v:FindFirstChildOfClass("ProximityPrompt")
         player.CFrame = v.CFrame
         if prox then
-            wait(0.2)
-            fireproximityprompt(prox)
             wait(0.5)
+            fireproximityprompt(prox)
         end
     end
 end
@@ -529,9 +525,8 @@ for i, v in pairs(game.workspace.ExitDoor:GetChildren()) do
         local prox = v:FindFirstChildOfClass("ProximityPrompt")
         player.CFrame = v.CFrame
         if prox then
-            wait(0.2)
-            fireproximityprompt(prox)
             wait(0.5)
+            fireproximityprompt(prox)
         end
     end
 end
@@ -733,9 +728,8 @@ if v:IsA("MeshPart") then
 local prox = v:FindFirstChildOfClass("ProximityPrompt")
 player.CFrame = v.CFrame
 if prox then
-wait(0.2)
-fireproximityprompt(prox)
 wait(0.5)
+fireproximityprompt(prox)
 end
 end
 end
@@ -755,7 +749,6 @@ for i, v in pairs(game.workspace.GemPlacePuzzle.Items:GetDescendants()) do
         if prox then
             wait(0.5)
             fireproximityprompt(prox)
-            wait(0.2)
         end
     end
 end
@@ -766,9 +759,8 @@ for i, v in pairs(game.workspace.GemPlacePuzzle:GetChildren()) do
         local prox = v:FindFirstChildOfClass("ProximityPrompt")
         player.CFrame = v.CFrame
         if prox then
-            wait(0.2)
-            fireproximityprompt(prox)
             wait(0.5)
+            fireproximityprompt(prox)
         end
     end
 end
