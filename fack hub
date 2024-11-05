@@ -1435,6 +1435,31 @@ game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-18.0326
 	})
 
 aTab:AddButton({
+	Name = "Auto candle light",
+	Callback = function()
+local Players = game:GetService("Players")
+local paintingNote = workspace.CandlePuzzle.PaintingNote.SurfaceGui.TextLabel
+local message = paintingNote.Text
+local messageList = string.split(message, " ")
+local plr = game.Players.LocalPlayer.Character.HumanoidRootPart
+
+for i, v in pairs(workspace.CandlePuzzle.Candles:GetChildren()) do
+    for i, word in ipairs(messageList) do
+        if v.Name == "Candle"..string.upper(word) then
+            print(v.Name)
+            local prox = v.INTER:FindFirstChildOfClass("ProximityPrompt")
+            plr.CFrame = v.INTER.CFrame
+            if prox then
+                wait(0.5)
+                fireproximityprompt(prox)
+            end
+        end
+    end
+end
+        end  
+	})
+
+aTab:AddButton({
 	Name = "show code",
 	Callback = function()
 local Players = game:GetService("Players")
