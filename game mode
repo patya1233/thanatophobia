@@ -155,7 +155,7 @@ local args = {
 }
 
 game:GetService("ReplicatedStorage").CardEvent:FireServer(unpack(args))
-wait(4)
+wait(2)
 local player = game.Players.LocalPlayer.Character.HumanoidRootPart
 for i, v in pairs(game.workspace.MainPuzzle.Objective3:GetChildren()) do
     if v.Name == "GoldPumpkin" then
@@ -197,7 +197,7 @@ game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(20.37552
         end  
 	})
 
-local Section = cTab:AddSection({
+local Section = aTab:AddSection({
 	Name = "ESP"
 })
 
