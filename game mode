@@ -31,3 +31,46 @@ lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255) -- ทำให้ข้
 print("Fulbright mode activated")
   	end  
 	})
+
+local aTab = Window:MakeTab({
+	Name = "Halloween game",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+	})
+
+aTab:AddButton({
+	Name = "Card 1",
+	Callback = function()
+
+        end  
+	})
+
+aTab:AddButton({
+	Name = "Card 2",
+	Callback = function()
+
+        end  
+	})
+
+aTab:AddButton({
+	Name = "Card 3",
+	Callback = function()
+
+        end  
+	})
+
+aTab:AddButton({
+	Name = "esp item",
+	Callback = function()
+
+        end  
+	})
+
+aTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+
+        end  
+	})
+
+OrionLib:Init()
