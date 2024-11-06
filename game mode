@@ -179,13 +179,11 @@ local Section = aTab:AddSection({
 aTab:AddButton({
 	Name = "Auto collect candy",
 	Callback = function()
-game:GetService("ReplicatedStorage").CardEvent:FireServer(unpack(args))
-wait(4)
 local player = game.Players.LocalPlayer.Character.HumanoidRootPart
-for i, v in pairs(game.workspace.MainPuzzle.Objective3:GetChildren()) do
-    if v.Name == "GoldPumpkin" then
-        local prox = v.Pumpkin:FindFirstChildOfClass("ProximityPrompt")
-        player.CFrame = v.Pumpkin.CFrame
+for i, v in pairs(game.workspace.SpawnedCoins:GetChildren()) do
+    if v:IsA("MeshPart") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
         if prox then
             wait(0.5)
             fireproximityprompt(prox)
