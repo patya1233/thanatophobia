@@ -172,7 +172,7 @@ game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(20.37552
         end  
 	})
 
-local Section = cTab:AddSection({
+local Section = aTab:AddSection({
 	Name = "Auto farm"
 })
 
