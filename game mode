@@ -177,7 +177,7 @@ local Section = aTab:AddSection({
 })
 
 aTab:AddButton({
-	Name = "Auto Candy Collector",
+	Name = "Auto collect candy",
 	Callback = function()
 game:GetService("ReplicatedStorage").CardEvent:FireServer(unpack(args))
 wait(4)
