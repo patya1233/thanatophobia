@@ -209,7 +209,71 @@ aTab:AddButton({
 aTab:AddButton({
 	Name = "esp Monster",
 	Callback = function()
+local monsterZombie = workspace:FindFirstChild("MonsterZombie")
 
+if monsterZombie then
+    for _, model in ipairs(monsterZombie:GetChildren()) do
+        if model:IsA("Model") then
+            -- ลบ Highlight เดิมถ้ามีอยู่
+            local existingHighlight = model:FindFirstChildOfClass("Highlight")
+            if existingHighlight then
+                existingHighlight:Destroy()
+            end
+
+            -- สร้าง Highlight ใหม่
+            local highlight = Instance.new("Highlight")
+            highlight.Parent = model
+            highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+            highlight.FillTransparency = 0.5 -- ข้างในโปร่งใส 50%
+            highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีเส้นขอบสีแดง
+            highlight.OutlineTransparency = 0 -- เส้นขอบไม่โปร่งใส
+        end
+    end
+end
+
+local monsterZombie = workspace:FindFirstChild("MonsterPumpkin")
+
+if monsterZombie then
+    for _, model in ipairs(monsterZombie:GetChildren()) do
+        if model:IsA("Model") then
+            -- ลบ Highlight เดิมถ้ามีอยู่
+            local existingHighlight = model:FindFirstChildOfClass("Highlight")
+            if existingHighlight then
+                existingHighlight:Destroy()
+            end
+
+            -- สร้าง Highlight ใหม่
+            local highlight = Instance.new("Highlight")
+            highlight.Parent = model
+            highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+            highlight.FillTransparency = 0.5 -- ข้างในโปร่งใส 50%
+            highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีเส้นขอบสีแดง
+            highlight.OutlineTransparency = 0 -- เส้นขอบไม่โปร่งใส
+        end
+    end
+end
+
+local monsterZombie = workspace:FindFirstChild("MonsterGhost")
+
+if monsterZombie then
+    for _, model in ipairs(monsterZombie:GetChildren()) do
+        if model:IsA("Model") then
+            -- ลบ Highlight เดิมถ้ามีอยู่
+            local existingHighlight = model:FindFirstChildOfClass("Highlight")
+            if existingHighlight then
+                existingHighlight:Destroy()
+            end
+
+            -- สร้าง Highlight ใหม่
+            local highlight = Instance.new("Highlight")
+            highlight.Parent = model
+            highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+            highlight.FillTransparency = 0.5 -- ข้างในโปร่งใส 50%
+            highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีเส้นขอบสีแดง
+            highlight.OutlineTransparency = 0 -- เส้นขอบไม่โปร่งใส
+        end
+    end
+end
         end  
 	})
 
