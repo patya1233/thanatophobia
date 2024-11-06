@@ -1,1 +1,33 @@
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
+local Window = OrionLib:MakeWindow({Name = "Fack HUB", HidePremium = false,  Introtext = "Fack HUB", SaveConfig = true, ConfigFolder = "Fack HUB"})
+
+OrionLib:MakeNotification({
+	Name = "hey",
+	Content = "I thed it for the first just",
+	Image = "rbxassetid://4483345998",
+	TimeTime
+	})
+
+local fackTab = Window:MakeTab({
+	Name = "Main",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+	})
+
+fackTab:AddButton({
+	Name = "Brightness",
+	Callback = function()
+			-- สคริปต์นี้จะทำให้เห็นชัดในที่มืด (Fulbright)
+
+local lighting = game:GetService("Lighting")
+
+-- ตั้งค่าให้เป็น Fulbright
+lighting.Ambient = Color3.fromRGB(255, 255, 255) -- ทำให้ทุกอย่างสว่าง
+lighting.Brightness = 10 -- เพิ่มความสว่างโดยรวม
+lighting.GlobalShadows = false -- ปิดเงาทั้งหมด
+lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255) -- ทำให้ข้างนอกสว่าง
+
+print("Fulbright mode activated")
+  	end  
+	})
