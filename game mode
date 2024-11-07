@@ -18,8 +18,6 @@ local fackTab = Window:MakeTab({
 fackTab:AddButton({
 	Name = "Brightness",
 	Callback = function()
-			-- สคริปต์นี้จะทำให้เห็นชัดในที่มืด (Fulbright)
-
 local lighting = game:GetService("Lighting")
 
 -- ตั้งค่าให้เป็น Fulbright
@@ -204,16 +202,13 @@ aTab:AddButton({
 	Callback = function()
 local objective = workspace.MainPuzzle.Objective1
 
--- ฟังก์ชันเพิ่ม Highlight และ ESP Text
 local function addHighlightAndEspText(part)
-    -- ลบ Highlight เดิมถ้ามีอยู่
     for _, child in ipairs(part:GetChildren()) do
         if child:IsA("Highlight") then
             child:Destroy()
         end
     end
     
-    -- สร้าง Highlight ใหม่
     local highlight = Instance.new("Highlight")
     highlight.Name = "ObjectiveHighlight"
     highlight.Adornee = part
@@ -221,14 +216,12 @@ local function addHighlightAndEspText(part)
     highlight.FillTransparency = 0.5 -- โปร่งใส 50%
     highlight.Parent = part
 
-    -- ลบ ESP Text เดิมถ้ามีอยู่
     for _, child in ipairs(part:GetChildren()) do
         if child:IsA("BillboardGui") and child.Name == "EspText" then
             child:Destroy()
         end
     end
 
-    -- สร้าง BillboardGui สำหรับ ESP Text
     local billboardGui = Instance.new("BillboardGui")
     billboardGui.Name = "EspText"
     billboardGui.Adornee = part
@@ -236,7 +229,6 @@ local function addHighlightAndEspText(part)
     billboardGui.AlwaysOnTop = true
     billboardGui.Parent = part
 
-    -- สร้าง TextLabel สำหรับแสดงชื่อไฟล์
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(1, 0, 1, 0)
     textLabel.BackgroundTransparency = 1
@@ -246,7 +238,6 @@ local function addHighlightAndEspText(part)
     textLabel.Parent = billboardGui
 end
 
--- ตรวจหา MeshPart ภายใน Objective1 แล้วเพิ่ม Highlight และ ESP Text
 for _, part in ipairs(objective:GetChildren()) do
     if part:IsA("MeshPart") then
         addHighlightAndEspText(part)
