@@ -20,10 +20,10 @@ fackTab:AddButton({
 	Callback = function()
 local lighting = game:GetService("Lighting")
 
-lighting.Ambient = Color3.fromRGB(255, 255, 255) -- ทำให้ทุกอย่างสว่าง
-lighting.Brightness = 10 -- เพิ่มความสว่างโดยรวม
-lighting.GlobalShadows = false -- ปิดเงาทั้งหมด
-lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255) -- ทำให้ข้างนอกสว่าง
+lighting.Ambient = Color3.fromRGB(255, 255, 255)
+lighting.Brightness = 10
+lighting.GlobalShadows = false
+lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
 
 print("Fulbright mode activated")
   	end  
