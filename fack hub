@@ -1694,6 +1694,54 @@ end
         end  
 	})
 
+aTab:AddButton({
+	Name = "Auto fight boss",
+	Callback = function()
+local player = game:GetService("Players").LocalPlayer
+local player = game:GetService("Players").LocalPlayer
+local backpack = player:FindFirstChild("Backpack")
+
+if backpack then
+    for i = 1, 6 do
+        local toolName = "WhiteFlame" .. i
+        local tool = backpack:FindFirstChild(toolName)
+
+        if tool then
+            player.Character:WaitForChild("Humanoid"):EquipTool(tool)
+            break
+        end
+    end
+    wait(0.5)
+    local player = game.Players.LocalPlayer
+    local yoshida = workspace.BossFight.Yoshida
+    
+    local startTime = tick()
+    while tick() - startTime < 1 do
+        player.Character:WaitForChild("HumanoidRootPart").CFrame = yoshida.HumanoidRootPart.CFrame
+        wait(0.5)
+    end
+
+wait(1)
+    local lantern = backpack:FindFirstChild("Lantern")
+
+    if lantern then
+        player.Character:WaitForChild("Humanoid"):EquipTool(lantern)
+    else
+        warn("Lantern not found in backpack!")
+    end
+
+else
+    warn("Backpack not found!")
+end
+
+wait(0.5)
+game:GetService'VirtualUser':CaptureController()
+game:GetService'VirtualUser':Button1Down(Vector2.new(686, 352))
+wait(0.5)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = workspace.BossFight.KatanaG.CFrame
+        end  
+	})
+
 local Section = aTab:AddSection({
 	Name = "ESP"
 })
