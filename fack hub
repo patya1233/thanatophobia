@@ -1814,4 +1814,65 @@ end
         end  
 	})
 
+local Section = aTab:AddSection({
+	Name = "Part7"
+})
+
+aTab:AddButton({
+	Name = "Auto Win",
+	Callback = function()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(workspace.PillarPuzzle:GetChildren()) do
+    if v.Name == "Pillar" then
+        local prox = v.Trigger:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.Trigger.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
+wait(0.5)
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(workspace.NormalEnding:GetChildren()) do
+    if v.Name == "EndTrig" then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
+        end  
+	})
+
+local Section = aTab:AddSection({
+	Name = "ESP"
+})
+
+aTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local monsters = workspace.Monsters
+
+for _, model in ipairs(monsters:GetChildren()) do
+    if model:IsA("Model") then
+        -- ลบ Highlight ที่มีอยู่แล้ว
+        local existingHighlight = model:FindFirstChildOfClass("Highlight")
+        if existingHighlight then
+            existingHighlight:Destroy()
+        end
+        
+        -- สร้าง Highlight ใหม่
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = model
+        highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    end
+end
+        end  
+	})
+
 OrionLib:Init()
