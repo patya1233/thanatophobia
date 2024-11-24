@@ -1660,4 +1660,98 @@ end
         end  
 	})
 
+local Section = aTab:AddSection({
+	Name = "Part6"
+})
+
+
+aTab:AddButton({
+	Name = "Auto collect candles",
+	Callback = function()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.BossFight.WhiteFlameCandles:GetDescendants()) do
+    if v:IsA("Model") then
+        local prox = v.Handle:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.Handle.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
+        end  
+	})
+
+local Section = aTab:AddSection({
+	Name = "ESP"
+})
+
+aTab:AddButton({
+	Name = "esp iten",
+	Callback = function()
+local flamesFolder = workspace.BossFight.WhiteFlameCandles
+
+for i = 1, 6 do
+    local flame = flamesFolder:FindFirstChild("Flame" .. i .. "G")
+    if flame then
+        for _, child in ipairs(flame:GetChildren()) do
+            if child:IsA("Highlight") then
+                child:Destroy()
+            end
+        end
+
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "Flame" .. i .. "Highlight"
+        highlight.FillColor = Color3.fromRGB(0, 255, 0)
+        highlight.FillTransparency = 0.5
+        highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+        highlight.Parent = flame
+
+        for _, child in ipairs(flame:GetChildren()) do
+            if child:IsA("BillboardGui") and child.Name == "ESPText" then
+                child:Destroy()
+            end
+        end
+
+        local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Name = "ESPText"
+        billboardGui.Size = UDim2.new(4, 0, 1, 0)
+        billboardGui.AlwaysOnTop = true
+        billboardGui.Parent = flame
+
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = flame.Name
+        textLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        textLabel.TextScaled = true
+        textLabel.Font = Enum.Font.SourceSansBold
+        textLabel.Parent = billboardGui
+    end
+end
+        end  
+	})
+
+aTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local yoshida = workspace.BossFight:FindFirstChild("Yoshida")
+
+if yoshida then
+    for _, child in ipairs(yoshida:GetChildren()) do
+        if child:IsA("Highlight") then
+            child:Destroy()
+        end
+    end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "YoshidaHighlight"
+    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+    highlight.Parent = yoshida
+end
+        end  
+	})
+
 OrionLib:Init()
