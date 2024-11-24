@@ -1747,7 +1747,7 @@ local Section = aTab:AddSection({
 })
 
 aTab:AddButton({
-	Name = "esp iten",
+	Name = "esp item",
 	Callback = function()
 local flamesFolder = workspace.BossFight.WhiteFlameCandles
 
