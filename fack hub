@@ -1679,8 +1679,18 @@ for i, v in pairs(game.workspace.BossFight.WhiteFlameCandles:GetDescendants()) d
         end
     end
 end
-wait(0.5)
-game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(274.238037, 15.1999989, 119.05867, -0.999766707, 8.59748095e-09, 0.0215985104, 7.55274598e-09, 1, -4.84522431e-08, -0.0215985104, -4.8277812e-08, -0.999766707)
+wait()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(game.workspace.BossFight:GetChildren()) do
+    if v:IsA("Part") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
         end  
 	})
 
