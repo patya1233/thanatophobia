@@ -984,7 +984,7 @@ for i, v in pairs(game.workspace.SkullPlacePuzzle.FirstPart:GetDescendants()) do
         local prox = v.Lever1:FindFirstChildOfClass("ProximityPrompt")
         player.CFrame = v.Lever1.CFrame
         if prox then
-            wait(0.5)
+            wait(0.2)
             fireproximityprompt(prox)
         end
     end
@@ -1003,7 +1003,7 @@ for i, v in pairs(game.workspace.Monsters:GetChildren()) do
         local prox = v.Skull:FindFirstChildOfClass("ProximityPrompt")
         player.CFrame = v.Skull.CFrame * CFrame.new(0, 21, 0) -- เพิ่มค่าในแกน Y ขึ้น 5 หน่วย
         if prox then
-            wait(0.2)
+            wait(0.5)
             fireproximityprompt(prox)
         end
     end
