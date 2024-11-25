@@ -1852,6 +1852,51 @@ local Section = aTab:AddSection({
 })
 
 aTab:AddButton({
+	Name = "esp item",
+	Callback = function()
+local pillars = workspace.PillarPuzzle:GetChildren()
+
+for _, pillar in ipairs(pillars) do
+    if pillar.Name == "Pillar" then
+        for _, child in ipairs(pillar:GetChildren()) do
+            if child:IsA("Highlight") then
+                child:Destroy()
+            end
+        end
+
+        local highlight = Instance.new("Highlight")
+        highlight.FillColor = Color3.new(0, 1, 0)
+        highlight.FillTransparency = 0.5
+        highlight.OutlineColor = Color3.new(0, 1, 0)
+        highlight.Parent = pillar
+
+        for _, child in ipairs(pillar:GetChildren()) do
+            if child:IsA("BillboardGui") and child.Name == "ESPText" then
+                child:Destroy()
+            end
+        end
+
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "ESPText"
+        billboard.Size = UDim2.new(0, 25, 0, 25)
+        billboard.StudsOffset = Vector3.new(0, 10, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = pillar
+
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = pillar.Name
+        textLabel.TextColor3 = Color3.new(0, 1, 0)
+        textLabel.TextScaled = true
+        textLabel.Font = Enum.Font.SourceSans
+        textLabel.Parent = billboard
+    end
+end
+        end  
+	})
+
+aTab:AddButton({
 	Name = "esp Monster",
 	Callback = function()
 local monsters = workspace.Monsters
