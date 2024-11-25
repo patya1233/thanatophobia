@@ -2034,4 +2034,19 @@ end
         end  
 	})
 
+local Section = dTab:AddSection({
+	Name = "part2"
+})
+
+dTab:AddButton({
+	Name = "Auto Win",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1044.5, 89.5, -159, 0, 0, 1, 0, 1, -0, -1, 0, 0)
+        end  
+	})
+
+local Section = dTab:AddSection({
+	Name = "part3"
+})
+
 OrionLib:Init()
