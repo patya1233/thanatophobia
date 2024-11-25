@@ -1970,7 +1970,7 @@ local Section = dTab:AddSection({
 })
 
 dTab:AddButton({
-	Name = "tp to village",
+	Name = "esp item",
 	Callback = function()
 -- Function to create an ESP box
 local function createESPBox(part, size)
