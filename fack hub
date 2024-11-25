@@ -1920,4 +1920,118 @@ end
         end  
 	})
 
+local dTab = Window:MakeTab({
+	Name = "book1 chapter4",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+	})
+
+local Section = dTab:AddSection({
+	Name = "Part1"
+})
+
+dTab:AddButton({
+	Name = "Auto rose collection",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-154.594788, 15.4770927, 128.613297, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-155.7948, 15.9770927, 127.676819, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+wait()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(workspace.MainPuzzle.Items:GetChildren()) do
+    if v:IsA("MeshPart") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame * CFrame.new(0,-5,0)
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
+wait()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(workspace.MainPuzzle:GetChildren()) do
+    if v.Name == "Trigger" then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-155, 16.5, 184.5, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+        end  
+	})
+
+local Section = dTab:AddSection({
+	Name = "ESP"
+})
+
+dTab:AddButton({
+	Name = "tp to village",
+	Callback = function()
+-- Function to create an ESP box
+local function createESPBox(part, size)
+    -- Remove existing ESP box if it exists
+    if part:FindFirstChild("ESPBox") then
+        part.ESPBox:Destroy()
+    end
+
+    -- Create a new ESP box
+    local box = Instance.new("BoxHandleAdornment")
+    box.Name = "ESPBox"
+    box.Adornee = part
+    box.AlwaysOnTop = true
+    box.ZIndex = 10
+    box.Size = size -- Vector3.new(x, y, z) ปรับขนาดตามที่ต้องการ
+    box.Color3 = Color3.new(0, 1, 0) -- สีเขียว
+    box.Transparency = 0.5 -- โปร่งใส 50%
+    box.Parent = part
+end
+
+-- Get the CollectingBlocks from workspace
+local collectingBlocks = workspace.MainPuzzle.Items
+
+-- Check if CollectingBlocks exists
+if collectingBlocks then
+    -- Loop through all the children in CollectingBlocks
+    for _, child in pairs(collectingBlocks:GetChildren()) do
+        -- Check if the child is named "Butterfly"
+        if child:IsA("MeshPart") then
+            -- Call the function to add the ESP box
+            createESPBox(child, Vector3.new(2, 2, 2)) -- ปรับขนาดตามต้องการ
+        end
+    end
+else
+    warn("CollectingBlocks not found!")
+end
+        end  
+	})
+
+dTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local monsters = workspace.Monsters
+
+for _, model in ipairs(monsters:GetChildren()) do
+    if model:IsA("Model") then
+        -- ลบ Highlight ที่มีอยู่แล้ว
+        local existingHighlight = model:FindFirstChildOfClass("Highlight")
+        if existingHighlight then
+            existingHighlight:Destroy()
+        end
+        
+        -- สร้าง Highlight ใหม่
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = model
+        highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    end
+end
+        end  
+	})
+
 OrionLib:Init()
