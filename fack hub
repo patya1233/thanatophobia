@@ -2049,4 +2049,21 @@ local Section = dTab:AddSection({
 	Name = "part3"
 })
 
+dTab:AddButton({
+	Name = "tp to exit",
+	Callback = function()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(workspace.FirstSection.Stairs:GetChildren()) do
+    if v.Name == "ExitDoor" then
+        local prox = v.DoorFrame:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.DoorFrame.CFrame * CFrame.new(-1,0,0)
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
+        end  
+	})
+
 OrionLib:Init()
