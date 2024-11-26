@@ -2066,4 +2066,34 @@ end
         end  
 	})
 
+local Section = dTab:AddSection({
+	Name = "ESP"
+})
+
+
+
+dTab:AddButton({
+	Name = "esp Monster",
+	Callback = function()
+local monsters = workspace.Monsters
+
+for _, model in ipairs(monsters:GetChildren()) do
+    if model:IsA("Model") then
+        -- ลบ Highlight ที่มีอยู่แล้ว
+        local existingHighlight = model:FindFirstChildOfClass("Highlight")
+        if existingHighlight then
+            existingHighlight:Destroy()
+        end
+        
+        -- สร้าง Highlight ใหม่
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = model
+        highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- สีแดง
+        highlight.FillTransparency = 0.5 -- โปร่งใส 50%
+    end
+end
+        end  
+	})
+
 OrionLib:Init()
