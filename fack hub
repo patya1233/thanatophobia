@@ -2163,6 +2163,59 @@ if monsterZombie then
         end
     end
 end
+-- อ้างอิง Objective2 ใน MainPuzzle
+local objective2 = workspace.SecondSection.MonsterPart
+
+-- วนลูปตรวจสอบวัตถุทุกชิ้นใน Objective2
+for _, part in ipairs(objective2:GetChildren()) do
+    -- ตรวจสอบว่าเป็น Model และไม่ใช่ Witch
+    if part:IsA("Model") and part.Name ~= "Witch" then
+        -- ค้นหา MeshPart ภายใน Model
+        for _, meshPart in ipairs(part:GetChildren()) do
+            if meshPart:IsA("MeshPart") and (meshPart.Name == "Ingredient 1" or meshPart.Name == "Ingredient 2") then
+                -- ลบ Highlight เก่า (ถ้ามี)
+                local existingHighlight = meshPart:FindFirstChildOfClass("Highlight")
+                if existingHighlight then
+                    existingHighlight:Destroy()
+                end
+
+                -- สร้าง Highlight ใหม่และตั้งค่า
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ObjectiveHighlight"
+                highlight.Parent = meshPart
+                highlight.FillColor = Color3.new(0, 1, 0) -- สีเขียว
+                highlight.FillTransparency = 0.5          -- โปร่งใส 50%
+                highlight.OutlineColor = Color3.new(0, 1, 0) -- สีเขียว
+                highlight.OutlineTransparency = 0         -- ขอบไม่โปร่งใส
+
+                -- ลบ ESP Text (BillboardGui) เก่า (ถ้ามี)
+                local existingBillboard = meshPart:FindFirstChild("ESPText")
+                if existingBillboard then
+                    existingBillboard:Destroy()
+                end
+
+                -- สร้าง BillboardGui ใหม่สำหรับ ESP Text
+                local billboardGui = Instance.new("BillboardGui")
+                billboardGui.Name = "ESPText"
+                billboardGui.Parent = meshPart
+                billboardGui.Adornee = meshPart
+                billboardGui.Size = UDim2.new(0, 25, 0, 25) -- ขนาด
+                billboardGui.StudsOffset = Vector3.new(0, 2, 0) -- เลื่อนขึ้นให้มองเห็นชัดเจน
+                billboardGui.AlwaysOnTop = true
+
+                -- สร้าง TextLabel ภายใน BillboardGui
+                local textLabel = Instance.new("TextLabel")
+                textLabel.Parent = billboardGui
+                textLabel.Size = UDim2.new(1, 0, 1, 0)
+                textLabel.BackgroundTransparency = 1
+                textLabel.Text = meshPart.Name -- ตั้งชื่อ Text ตามชื่อของ MeshPart
+                textLabel.TextColor3 = Color3.new(0, 1, 0) -- สีเขียว
+                textLabel.TextStrokeTransparency = 0.5
+                textLabel.TextScaled = true -- ขยายขนาดตัวอักษรอัตโนมัติ
+            end
+        end
+    end
+end
         end  
 	})
 
