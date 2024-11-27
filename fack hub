@@ -2066,11 +2066,78 @@ end
         end  
 	})
 
+dTab:AddButton({
+	Name = "tp to village",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-393.024384, 6.53264141, -376.39447, 0, 0, 1, 0, 1, -0, -1, 0, 0)
+wait()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(workspace.SecondSection.MonsterPart.DisplayCases:GetDescendants()) do
+    if v.Name == "Button" then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
+wait()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(workspace.SecondSection.MonsterPart:GetChildren()) do
+    if v:IsA("MeshPart") then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
+wait()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(workspace.Monsters.CrawlingMonster:GetChildren()) do
+    if v.Name == "Hat" then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame * CFrame.new(0,13,0)
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
+wait()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(workspace.SecondSection.MonsterPart.DisplayCases:GetDescendants()) do
+    if v.Name == "Trigger" then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
+wait()
+local player = game.Players.LocalPlayer.Character.HumanoidRootPart
+for i, v in pairs(workspace.SecondSection.MonsterPart.DisplayCases:GetDescendants()) do
+    if v.Name == "Button" then
+        local prox = v:FindFirstChildOfClass("ProximityPrompt")
+        player.CFrame = v.CFrame
+        if prox then
+            wait(0.5)
+            fireproximityprompt(prox)
+        end
+    end
+end
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-634.299866, 4.29999924, -769, 0, 0, 1, 0, 1, -0, -1, 0, 0)
+        end  
+	})
+
 local Section = dTab:AddSection({
 	Name = "ESP"
 })
-
-
 
 dTab:AddButton({
 	Name = "esp Monster",
