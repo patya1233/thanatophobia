@@ -2067,7 +2067,7 @@ end
 	})
 
 dTab:AddButton({
-	Name = "tp to village",
+	Name = "Auto Win",
 	Callback = function()
 game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-393.024384, 6.53264141, -376.39447, 0, 0, 1, 0, 1, -0, -1, 0, 0)
 wait()
@@ -2138,6 +2138,33 @@ game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-634.299
 local Section = dTab:AddSection({
 	Name = "ESP"
 })
+
+dTab:AddButton({
+	Name = "esp item",
+	Callback = function()
+local monsterZombie = workspace.SecondSection.MonsterPart.DisplayCases
+
+if monsterZombie then
+    for _, model in ipairs(monsterZombie:GetChildren()) do
+        if model:IsA("Model") then
+            -- ลบ Highlight เดิมถ้ามีอยู่
+            local existingHighlight = model:FindFirstChildOfClass("Highlight")
+            if existingHighlight then
+                existingHighlight:Destroy()
+            end
+
+            -- สร้าง Highlight ใหม่
+            local highlight = Instance.new("Highlight")
+            highlight.Parent = model
+            highlight.FillColor = Color3.fromRGB(0, 255, 0) -- สีแดง
+            highlight.FillTransparency = 0.5 -- ข้างในโปร่งใส 50%
+            highlight.OutlineColor = Color3.fromRGB(0, 255, 0) -- สีเส้นขอบสีแดง
+            highlight.OutlineTransparency = 0 -- เส้นขอบไม่โปร่งใส
+        end
+    end
+end
+        end  
+	})
 
 dTab:AddButton({
 	Name = "esp Monster",
