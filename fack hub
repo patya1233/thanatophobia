@@ -2067,7 +2067,7 @@ end
 	})
 
 dTab:AddButton({
-	Name = "Auto Win",
+	Name = "Auto press button 1",
 	Callback = function()
 game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-393.024384, 6.53264141, -376.39447, 0, 0, 1, 0, 1, -0, -1, 0, 0)
 wait()
@@ -2082,7 +2082,12 @@ for i, v in pairs(workspace.SecondSection.MonsterPart.DisplayCases:GetDescendant
         end
     end
 end
-wait()
+        end  
+	})
+
+dTab:AddButton({
+	Name = "Auto item collection",
+	Callback = function()
 local player = game.Players.LocalPlayer.Character.HumanoidRootPart
 for i, v in pairs(workspace.SecondSection.MonsterPart:GetChildren()) do
     if v:IsA("MeshPart") then
@@ -2094,7 +2099,7 @@ for i, v in pairs(workspace.SecondSection.MonsterPart:GetChildren()) do
         end
     end
 end
-wait()
+wait(0.5)
 local player = game.Players.LocalPlayer.Character.HumanoidRootPart
 for i, v in pairs(workspace.Monsters.CrawlingMonster:GetChildren()) do
     if v.Name == "Hat" then
@@ -2118,7 +2123,12 @@ for i, v in pairs(workspace.SecondSection.MonsterPart.DisplayCases:GetDescendant
         end
     end
 end
-wait()
+        end  
+	})
+
+dTab:AddButton({
+	Name = "Auto press button 2",
+	Callback = function()
 local player = game.Players.LocalPlayer.Character.HumanoidRootPart
 for i, v in pairs(workspace.SecondSection.MonsterPart.DisplayCases:GetDescendants()) do
     if v.Name == "Button" then
