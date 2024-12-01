@@ -2152,78 +2152,87 @@ local Section = dTab:AddSection({
 dTab:AddButton({
 	Name = "esp item",
 	Callback = function()
-local monsterZombie = workspace.SecondSection.MonsterPart.DisplayCases
+local monsterPart = workspace.SecondSection.MonsterPart.DisplayCases
 
-if monsterZombie then
-    for _, model in ipairs(monsterZombie:GetChildren()) do
-        if model:IsA("Model") then
-            -- ลบ Highlight เดิมถ้ามีอยู่
-            local existingHighlight = model:FindFirstChildOfClass("Highlight")
-            if existingHighlight then
-                existingHighlight:Destroy()
-            end
-
-            -- สร้าง Highlight ใหม่
-            local highlight = Instance.new("Highlight")
-            highlight.Parent = model
-            highlight.FillColor = Color3.fromRGB(0, 255, 0) -- สีแดง
-            highlight.FillTransparency = 0.5 -- ข้างในโปร่งใส 50%
-            highlight.OutlineColor = Color3.fromRGB(0, 255, 0) -- สีเส้นขอบสีแดง
-            highlight.OutlineTransparency = 0 -- เส้นขอบไม่โปร่งใส
+local function clearExisting(meshPart)
+    for _, child in pairs(meshPart:GetChildren()) do
+        if child:IsA("Highlight") or (child:IsA("BillboardGui") and child.Name == "ESPText") then
+            child:Destroy()
         end
     end
 end
--- อ้างอิง Objective2 ใน MainPuzzle
-local objective2 = workspace.SecondSection.MonsterPart
 
--- วนลูปตรวจสอบวัตถุทุกชิ้นใน Objective2
-for _, part in ipairs(objective2:GetChildren()) do
-    -- ตรวจสอบว่าเป็น Model และไม่ใช่ Witch
-    if part:IsA("Model") and part.Name ~= "Witch" then
-        -- ค้นหา MeshPart ภายใน Model
-        for _, meshPart in ipairs(part:GetChildren()) do
-            if meshPart:IsA("MeshPart") and (meshPart.Name == "Ingredient 1" or meshPart.Name == "Ingredient 2") then
-                -- ลบ Highlight เก่า (ถ้ามี)
-                local existingHighlight = meshPart:FindFirstChildOfClass("Highlight")
-                if existingHighlight then
-                    existingHighlight:Destroy()
-                end
+local function addHighlightAndESP(meshPart)
+    clearExisting(meshPart)
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "Highlight"
+    highlight.FillColor = Color3.new(0, 1, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = meshPart
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESPText"
+    billboard.Size = UDim2.new(0, 50, 0, 50)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = meshPart
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = meshPart.Name
+    textLabel.TextColor3 = Color3.new(0, 1, 0)
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.Parent = billboard
+end
 
-                -- สร้าง Highlight ใหม่และตั้งค่า
-                local highlight = Instance.new("Highlight")
-                highlight.Name = "ObjectiveHighlight"
-                highlight.Parent = meshPart
-                highlight.FillColor = Color3.new(0, 1, 0) -- สีเขียว
-                highlight.FillTransparency = 0.5          -- โปร่งใส 50%
-                highlight.OutlineColor = Color3.new(0, 1, 0) -- สีเขียว
-                highlight.OutlineTransparency = 0         -- ขอบไม่โปร่งใส
+for _, meshPart in pairs(monsterPart:GetChildren()) do
+    if meshPart:IsA("Model") then
+        addHighlightAndESP(meshPart)
+    end
+end
 
-                -- ลบ ESP Text (BillboardGui) เก่า (ถ้ามี)
-                local existingBillboard = meshPart:FindFirstChild("ESPText")
-                if existingBillboard then
-                    existingBillboard:Destroy()
-                end
+local monsterPart = workspace.SecondSection.MonsterPart
 
-                -- สร้าง BillboardGui ใหม่สำหรับ ESP Text
-                local billboardGui = Instance.new("BillboardGui")
-                billboardGui.Name = "ESPText"
-                billboardGui.Parent = meshPart
-                billboardGui.Adornee = meshPart
-                billboardGui.Size = UDim2.new(0, 25, 0, 25) -- ขนาด
-                billboardGui.StudsOffset = Vector3.new(0, 2, 0) -- เลื่อนขึ้นให้มองเห็นชัดเจน
-                billboardGui.AlwaysOnTop = true
-
-                -- สร้าง TextLabel ภายใน BillboardGui
-                local textLabel = Instance.new("TextLabel")
-                textLabel.Parent = billboardGui
-                textLabel.Size = UDim2.new(1, 0, 1, 0)
-                textLabel.BackgroundTransparency = 1
-                textLabel.Text = meshPart.Name -- ตั้งชื่อ Text ตามชื่อของ MeshPart
-                textLabel.TextColor3 = Color3.new(0, 1, 0) -- สีเขียว
-                textLabel.TextStrokeTransparency = 0.5
-                textLabel.TextScaled = true -- ขยายขนาดตัวอักษรอัตโนมัติ
-            end
+local function clearExisting(meshPart)
+    for _, child in pairs(meshPart:GetChildren()) do
+        if child:IsA("Highlight") or (child:IsA("BillboardGui") and child.Name == "ESPText") then
+            child:Destroy()
         end
+    end
+end
+
+local function addHighlightAndESP(meshPart)
+    clearExisting(meshPart)
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "Highlight"
+    highlight.FillColor = Color3.new(0, 1, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = meshPart
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESPText"
+    billboard.Size = UDim2.new(0, 50, 0, 50)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = meshPart
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = meshPart.Name
+    textLabel.TextColor3 = Color3.new(0, 1, 0)
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.Parent = billboard
+end
+
+for _, meshPart in pairs(monsterPart:GetChildren()) do
+    if meshPart:IsA("MeshPart") then
+        addHighlightAndESP(meshPart)
     end
 end
         end  
