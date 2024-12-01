@@ -2266,10 +2266,9 @@ end
         end  
 	})
 
-dTab:AddButton({
-	Name = "Part 4",
-	Callback = function()
-local monsters = workspace.Monsters
+local Section = dTab:AddSection({
+	Name = "Part4"
+})
 
 dTab:AddButton({
 	Name = "tp to exit",
