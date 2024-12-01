@@ -2082,6 +2082,8 @@ for i, v in pairs(workspace.SecondSection.MonsterPart.DisplayCases:GetDescendant
         end
     end
 end
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-393.024384, 6.53264141, -376.39447, 0, 0, 1, 0, 1, -0, -1, 0, 0)
         end  
 	})
 
@@ -2123,6 +2125,8 @@ for i, v in pairs(workspace.SecondSection.MonsterPart.DisplayCases:GetDescendant
         end
     end
 end
+wait()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-393.024384, 6.53264141, -376.39447, 0, 0, 1, 0, 1, -0, -1, 0, 0)
         end  
 	})
 
@@ -2259,6 +2263,18 @@ for _, model in ipairs(monsters:GetChildren()) do
         highlight.FillTransparency = 0.5 -- โปร่งใส 50%
     end
 end
+        end  
+	})
+
+dTab:AddButton({
+	Name = "Part 4",
+	Callback = function()
+local monsters = workspace.Monsters
+
+dTab:AddButton({
+	Name = "tp to exit",
+	Callback = function()
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(979.500061, 274, -148.5, -1, 0, 0, 0, 1, 0, 0, 0, -1)
         end  
 	})
 
