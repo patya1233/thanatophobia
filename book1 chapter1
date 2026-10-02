@@ -184,7 +184,7 @@ local Button = c1Tab:CreateButton({
         for _, v in ipairs(workspace.MainPuzzle.CursedPuzzle.CursedFolder:GetDescendants()) do
             if v:IsA("MeshPart") then
                 TeleportTo(v)
-                task.wait(0.1)
+                task.wait(0.3)
 
                 local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
                     or v.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
