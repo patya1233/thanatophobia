@@ -9,6 +9,9 @@ player.CharacterAdded:Connect(function(char)
     hrp = char:WaitForChild("HumanoidRootPart")
 end)
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
 local function RemoveESP(object)
     if not object then return end
 
@@ -162,13 +165,414 @@ local function TeleportTo(targetPosition)
     end
 end
 
-local c2Tab = Window:CreateTab("cocoa", "align-justify")
+local function TeleportToNearestSafeLight(folder)
+    local nearest = nil
+    local shortest = math.huge
+
+    for _, v in ipairs(folder:GetChildren()) do
+        if v:IsA("BasePart") then
+            local distance = (hrp.Position - v.Position).Magnitude
+
+            if distance < shortest then
+                shortest = distance
+                nearest = v
+            end
+        end
+    end
+
+    if nearest then
+        TeleportTo(nearest)
+    end
+end
+
+local AutoPickaxeConnection
+local AutoPickaxeRunning = false
+
+local function AutoPickaxe(Value)
+    if Value then
+        if AutoPickaxeRunning then
+            return
+        end
+
+        AutoPickaxeRunning = true
+
+        local Player = Players.LocalPlayer
+
+        local Button = Player.PlayerGui
+            :WaitForChild("PickaxeSequenceGUI")
+            :WaitForChild("Frame")
+            :WaitForChild("MainFrame")
+            :WaitForChild("Button")
+
+        local Ring = Button:WaitForChild("Ring")
+
+        local fired = false
+        local lastRingScale = nil
+
+        -- ตรวจว่ามี Activated connection จริงไหม
+        local connections = getconnections(Button.Activated)
+
+        print("Activated connections:", #connections)
+
+        for i, con in ipairs(connections) do
+            print(
+                i,
+                "Enabled =", con.Enabled,
+                "Function =", con.Function
+            )
+        end
+
+        AutoPickaxeConnection = Ring:GetPropertyChangedSignal("Size"):Connect(function()
+            if not AutoPickaxeRunning then
+                return
+            end
+
+            if not Button.Visible then
+                fired = false
+                lastRingScale = nil
+                return
+            end
+
+            local ringScale = Ring.Size.X.Scale
+
+            -- วงถูกสร้างใหม่ / เริ่มรอบใหม่
+            if ringScale >= 1.20 then
+                fired = false
+                lastRingScale = ringScale
+                return
+            end
+
+            -- จับ "ข้าม" จาก > 1.0 ลงมา <= 1.0
+            if not fired
+                and lastRingScale ~= nil
+                and lastRingScale > 1.0
+                and ringScale <= 1.0 then
+
+                fired = true
+
+                print("AUTO PRESS:", Button.Text)
+                print("Previous Ring:", lastRingScale)
+                print("Current Ring :", ringScale)
+
+                firesignal(Button.Activated)
+            end
+
+            lastRingScale = ringScale
+        end)
+
+        print("Auto Pickaxe : เปิด")
+
+    else
+        AutoPickaxeRunning = false
+
+        if AutoPickaxeConnection then
+            AutoPickaxeConnection:Disconnect()
+            AutoPickaxeConnection = nil
+        end
+
+        print("Auto Pickaxe : ปิด")
+    end
+end
+
+local c2Tab = Window:CreateTab("CaveStalker", "align-justify")
 
 local Section = c2Tab:CreateSection("Part 1")
 
 local Button = c2Tab:CreateButton({
-    Name = "Auto Butterfly Collector",
-    Callback = function()
-            print("soon")
+   Name = "Auto Butterfly Collector",
+   Callback = function()
+--    pcall(function()
+--         TeleportTo(workspace.GameBlocks.DialogueBlocks.D1)
+--         task.wait(0.5)
+--         TeleportTo(workspace.GameBlocks.ObjectiveBlocks.Objective1)
+--     end)
+
+        for _, v in ipairs(workspace.MainPuzzle.CursedPuzzle.CursedFolder:GetDescendants()) do
+            if v:IsA("MeshPart") then
+                TeleportTo(v)
+                task.wait(0.3)
+
+                local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or v.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+        task.wait(0.3)
+        TeleportToNearestSafeLight(workspace.Part1Stuff.SAFELIGHT)
+        task.wait(3)
+        TeleportTo(workspace.MainPuzzle.CursedPuzzle.Exitpart)
+   end,
+})
+
+local Button = c2Tab:CreateButton({
+   Name = "Auto Run",
+   Callback = function()
+   pcall(function()
+        TeleportTo(workspace.MainPuzzle.ChaseSequence.MainChase.Events.EndingTrigger)
+    end)
+   end,
+})
+
+local Section = c2Tab:CreateSection("ESP item")
+
+local Toggle = c2Tab:CreateToggle({
+    Name = "esp Butterfly",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+        for _, v in ipairs(workspace.MainPuzzle.CursedPuzzle.CursedFolder:GetDescendants()) do
+            if v:IsA("MeshPart") then
+            CreateESPBox(v,Color3.new(0, 255, 0),Vector3.new(2, 2, 2))
+            CreateESPText(v,v.Name,Color3.fromRGB(0, 255, 0),Vector3.new(0, 3, 0),UDim2.new(0, 150, 0, 40))
+            print("on")
+            end
+        end
+        else
+            RemoveESP(workspace.MainPuzzle.CursedPuzzle.CursedFolder)
+            print("off")
+        end
+    end,
+})
+
+local Section = c2Tab:CreateSection("ESP Monster")
+
+local Toggle = c2Tab:CreateToggle({
+    Name = "esp monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            local CaveStalker = workspace.Monsters:FindFirstChild("CaveStalker")
+            CreateESPBox(CaveStalker,Color3.new(1, 0, 0),Vector3.new(5, 12, 5))
+            CreateESPText(CaveStalker,CaveStalker.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+            print("on")
+        else
+            RemoveESP(workspace.Monsters.CaveStalker)
+            print("off")
+        end
+    end,
+})
+
+local c2Tab = Window:CreateTab("FireLight", "align-justify")
+
+local Section = c2Tab:CreateSection("Part 2")
+
+local Button = c2Tab:CreateButton({
+   Name = "Auto Win",
+   Callback = function()
+   pcall(function()
+        TeleportTo(workspace.MainPuzzle.FourthPartPuzzle.SequenceTrigger)
+    end)
+   end,
+})
+
+local Toggle = c2Tab:CreateToggle({
+    Name = "Auto Pickaxe",
+    CurrentValue = false,
+    Flag = "AutoPickaxe",
+    Callback = function(Value)
+        AutoPickaxe(Value)
+    end,
+})
+
+local c2Tab = Window:CreateTab("Lizard", "align-justify")
+
+local Section = c2Tab:CreateSection("Part 3")
+
+local Button = c2Tab:CreateButton({
+   Name = "Auto Win",
+   Callback = function()
+        -- for _, v in ipairs(workspace.MainPuzzle.Items:GetDescendants()) do
+        --     if v:IsA("MeshPart") then
+        --         TeleportTo(v)
+        --         task.wait(0.3)
+
+        --         local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+        --             or v.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+        --         InteractPrompt(prompt, 0)
+        --     end
+        -- end
+        -- for _, v in ipairs(workspace.MainPuzzle:GetChildren()) do
+        --     if v.Name == "BurnTrigger" then
+        --         TeleportTo(v)
+        --         task.wait(0.3)
+
+        --         local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+        --             or v.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+        --         InteractPrompt(prompt, 0)
+        --     end
+        -- end
+        -- task.wait(0.5)
+        for _, v in ipairs(workspace.MainPuzzle.ExitDoor:GetChildren()) do
+            if v.Name == "DoorFrame" then
+                TeleportTo(v)
+                task.wait(0.3)
+
+                local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or v.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+   end,
+})
+
+local Section = c2Tab:CreateSection("ESP item")
+
+local Toggle = c2Tab:CreateToggle({
+    Name = "esp Butterfly",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+        for _, v in ipairs(workspace.MainPuzzle.Items:GetDescendants()) do
+            if v:IsA("MeshPart") then
+            CreateESPBox(v,Color3.new(0, 255, 0),Vector3.new(2, 2, 2))
+            CreateESPText(v,v.Name,Color3.fromRGB(0, 255, 0),Vector3.new(0, 3, 0),UDim2.new(0, 150, 0, 40))
+            print("on")
+            end
+        end
+        else
+            RemoveESP(workspace.MainPuzzle.Items)
+            print("off")
+        end
+    end,
+})
+
+local Section = c2Tab:CreateSection("ESP Monster")
+
+local Toggle = c2Tab:CreateToggle({
+    Name = "esp monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            local Lizard = workspace.Monsters:FindFirstChild("Lizard")
+            CreateESPBox(Lizard,Color3.new(1, 0, 0),Vector3.new(5, 12, 5))
+            CreateESPText(Lizard,Lizard.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+            print("on")
+        else
+            RemoveESP(workspace.Monsters.Lizard)
+            print("off")
+        end
+    end,
+})
+
+local c2Tab = Window:CreateTab("Miner", "align-justify")
+
+local Section = c2Tab:CreateSection("Part 4")
+
+local Button = c2Tab:CreateButton({
+   Name = "Auto Win",
+   Callback = function()
+        for _, v in ipairs(workspace.MainPuzzle.ExitDoor:GetChildren()) do
+            if v.Name == "DoorFrame" then
+                TeleportTo(v)
+                task.wait(0.3)
+
+                local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or v.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+   end,
+})
+
+local Section = c2Tab:CreateSection("ESP item")
+
+local Toggle = c2Tab:CreateToggle({
+    Name = "esp Pickaxe",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+        for _, v in ipairs(workspace.MainPuzzle.Items:GetDescendants()) do
+            if v:IsA("MeshPart") then
+            CreateESPBox(v,Color3.new(0, 255, 0),Vector3.new(2, 2, 2))
+            CreateESPText(v,v.Name,Color3.fromRGB(0, 255, 0),Vector3.new(0, 3, 0),UDim2.new(0, 150, 0, 40))
+            print("on")
+            end
+        end
+        else
+            RemoveESP(workspace.MainPuzzle.Items)
+            print("off")
+        end
+    end,
+})
+
+local Section = c2Tab:CreateSection("ESP Monster")
+
+local Toggle = c2Tab:CreateToggle({
+    Name = "esp monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            local Miner = workspace.Monsters:FindFirstChild("Miner")
+            CreateESPBox(Miner,Color3.new(1, 0, 0),Vector3.new(5, 12, 5))
+            CreateESPText(Miner,Miner.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+            print("on")
+        else
+            RemoveESP(workspace.Monsters.Miner)
+            print("off")
+        end
+    end,
+})
+
+local c2Tab = Window:CreateTab("Ending", "align-justify")
+
+local Section = c2Tab:CreateSection("Part 5")
+
+local Button = c2Tab:CreateButton({
+   Name = "Auto Win",
+   Callback = function()
+   pcall(function()
+        TeleportTo(workspace.Ending.EndingTrigger)
+    end)
+   end,
+})
+
+local Section = c2Tab:CreateSection("ESP item")
+
+local Toggle = c2Tab:CreateToggle({
+    Name = "esp Key",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+    local key = workspace.MainPuzzle.Key.Key1G
+        if Value then
+            CreateESPBox(key,Color3.new(0, 255, 0),Vector3.new(2, 2, 2))
+            CreateESPText(key,key.Name,Color3.fromRGB(0, 255, 0),Vector3.new(0, 3, 0),UDim2.new(0, 150, 0, 40))
+            print("on")
+        else
+            RemoveESP(key)
+            print("off")
+        end
+    end,
+})
+
+local Toggle = c2Tab:CreateToggle({
+    Name = "esp Code",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+    local code = workspace.MainPuzzle.CodeStuff
+    local vcode = code.Code.Value
+        if Value then
+            CreateESPBox(code.CodeNote,Color3.new(0, 255, 0),Vector3.new(2, 2, 2))
+            CreateESPText(code.CodeNote,vcode,Color3.fromRGB(0, 255, 0),Vector3.new(0, 3, 0),UDim2.new(0, 150, 0, 40))
+            print("on")
+        else
+            RemoveESP(code)
+            print("off")
+        end
     end,
 })
