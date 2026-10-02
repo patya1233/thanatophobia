@@ -167,8 +167,10 @@ local c2Tab = Window:CreateTab("cocoa", "align-justify")
 local Section = c2Tab:CreateSection("Part 1")
 
 local Button = c2Tab:CreateButton({
-   Name = "Auto Butterfly Collector",
-   Callback = function()
-        print("soon")
-   end,
+    Name = "Auto Butterfly Collector",
+    Callback = function()
+        pcall(function()
+            print("soon")
+        end)
+    end,
 })
