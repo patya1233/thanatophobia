@@ -1,1 +1,3 @@
+local Window = getgenv().FackWindow
 
+print("soon")
