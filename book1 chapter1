@@ -1,5 +1,3 @@
-return function(Window)
-
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:FindFirstChild("HumanoidRootPart")
@@ -438,5 +436,3 @@ local Toggle = c1Tab:CreateToggle({
         end
     end,
 })
-
-end
