@@ -1,4 +1,4 @@
-local b1c2 = getgenv().FackWindowb1c2
+local Window = getgenv().FackWindowb1c2
 
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
