@@ -2,7 +2,12 @@ local Window = getgenv().FackWindow
 
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
-local hrp = character:FindFirstChild("HumanoidRootPart")
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+player.CharacterAdded:Connect(function(char)
+    character = char
+    hrp = char:WaitForChild("HumanoidRootPart")
+end)
 
 local function RemoveESP(object)
     if not object then return end
@@ -144,22 +149,15 @@ local function InteractPrompt(object, delayTime)
     end
 end
 
--- 5. ฟังก์ชันวาป
 local function TeleportTo(targetPosition)
-    if not hrp or not targetPosition then return end
-
-    if typeof(targetPosition) == "CFrame" then
-        hrp.CFrame = targetPosition
-
-    elseif typeof(targetPosition) == "Vector3" then
-        hrp.CFrame = CFrame.new(targetPosition)
-
-    elseif typeof(targetPosition) == "Instance" then
-        if targetPosition:IsA("BasePart") then
+    if hrp and targetPosition then
+        if typeof(targetPosition) == "CFrame" then
+            hrp.CFrame = targetPosition
+        elseif typeof(targetPosition) == "Vector3" then
+            hrp.CFrame = CFrame.new(targetPosition)
+        elseif typeof(targetPosition) == "Instance"
+            and targetPosition:IsA("BasePart") then
             hrp.CFrame = targetPosition.CFrame
-
-        elseif targetPosition:IsA("Model") then
-            hrp.CFrame = targetPosition:GetPivot()
         end
     end
 end
