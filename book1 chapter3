@@ -1095,10 +1095,17 @@ local Section = c3Tab:CreateSection("Part 5")
 pcall(function()
 local TextLabel = workspace.CandlePuzzle.PaintingNote.SurfaceGui.TextLabel
 
-local Paragraph = c3Tab:CreateParagraph({
+local Paragraph = aTab:CreateParagraph({
     Title = "Painting Note",
     Content = TextLabel.Text
 })
+
+TextLabel:GetPropertyChangedSignal("Text"):Connect(function()
+    Paragraph:Set({
+        Title = "Painting Note",
+        Content = TextLabel.Text
+    })
+end)
 end)
 
 local Section = c3Tab:CreateSection("Auto complete")
