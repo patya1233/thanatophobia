@@ -573,7 +573,7 @@ local Button = c3Tab:CreateButton({
         SaveCFrame()
 
         local MonsterPath = workspace.Monsters
-        local MonsterDistance = 20
+        local MonsterDistance = 30
 
         task.spawn(function()
 
