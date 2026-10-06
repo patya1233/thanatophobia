@@ -1093,18 +1093,22 @@ local c3Tab = Window:CreateTab("Yoshida 2", "align-justify")
 local Section = c3Tab:CreateSection("Part 5")
 
 pcall(function()
-local TextLabel = workspace.CandlePuzzle.PaintingNote.SurfaceGui.TextLabel
+pcall(function()
+    local TextLabel = workspace.CandlePuzzle.PaintingNote.SurfaceGui.TextLabel
 
-local Paragraph = aTab:CreateParagraph({
-    Title = "Painting Note",
-    Content = TextLabel.Text
-})
-
-TextLabel:GetPropertyChangedSignal("Text"):Connect(function()
-    Paragraph:Set({
+    local Paragraph = c3Tab:CreateParagraph({
         Title = "Painting Note",
-        Content = TextLabel.Text
+        Content = TextLabel and TextLabel.Text or "Wait Note"
     })
+
+    if TextLabel then
+        TextLabel:GetPropertyChangedSignal("Text"):Connect(function()
+            Paragraph:Set({
+                Title = "Painting Note",
+                Content = TextLabel.Text
+            })
+        end)
+    end
 end)
 end)
 
@@ -1485,7 +1489,7 @@ local Button = c3Tab:CreateButton({
 local Section = c3Tab:CreateSection("ESP item")
 
 local Toggle = c3Tab:CreateToggle({
-    Name = "esp Fire",
+    Name = "esp Pillar",
     CurrentValue = false,
     Flag = "Toggle1",
     Callback = function(Value)
