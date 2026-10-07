@@ -1,0 +1,1323 @@
+local Window = getgenv().FackWindowb1c4
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+player.CharacterAdded:Connect(function(char)
+    character = char
+    hrp = char:WaitForChild("HumanoidRootPart")
+end)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local function RemoveESP(object)
+    if not object then return end
+
+    -- ลบ Object ที่ชื่อมีคำว่า "Fackhub"
+    for _, obj in ipairs(object:GetDescendants()) do
+        if string.find(obj.Name, "Fackhub", 1, true) then
+            obj:Destroy()
+        end
+    end
+
+    -- เช็กตัว object เองด้วย
+    if string.find(object.Name, "Fackhub", 1, true) then
+        object:Destroy()
+    end
+end
+
+local function CreateHighlight(object, fillColor, outlineColor, fillTrans, outlineTrans)
+    if not object then return end
+    if object:FindFirstChild("FackhubHighlight") then return end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "FackhubHighlight"
+    highlight.FillColor = fillColor or Color3.fromRGB(255, 255, 255)
+    highlight.OutlineColor = outlineColor or Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = fillTrans or 0.5
+    highlight.OutlineTransparency = outlineTrans or 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = object
+
+    return highlight
+end
+
+
+-- 2. ฟังก์ชันสร้าง BillboardGui / ESP Text
+local function CreateESPText(object, text, color, offset, size)
+    if not object then return end
+    if object:FindFirstChild("FackhubText") then return end
+
+    color = color or Color3.fromRGB(255, 255, 255)
+    offset = offset or Vector3.new(0, 3, 0)
+    size = size or UDim2.new(0, 150, 0, 40)
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "FackhubText"
+    billboard.Size = size
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = offset
+    billboard.Parent = object
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = text or object.Name
+    textLabel.TextColor3 = color
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Parent = billboard
+
+    return billboard
+end
+
+
+local function CreateESPBox(object, color, size, transparency)
+    if not object then
+        return nil
+    end
+
+    color = color or Color3.fromRGB(0, 255, 0)
+    transparency = transparency or 0.5
+
+    -- Part / MeshPart / UnionOperation ฯลฯ
+    if object:IsA("BasePart") then
+        if object:FindFirstChild("FackhubBox") then
+            return nil
+        end
+
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "FackhubBox"
+        box.Adornee = object
+        box.AlwaysOnTop = true
+        box.ZIndex = 10
+        box.Size = size or object.Size
+        box.Color3 = color
+        box.Transparency = transparency
+        box.Parent = object
+
+        return box
+    end
+
+    -- Model
+    if object:IsA("Model") then
+        local part = object:FindFirstChild("HumanoidRootPart")
+            or object.PrimaryPart
+            or object:FindFirstChildWhichIsA("BasePart", true)
+
+        if not part then
+            warn("ไม่พบ BasePart ใน Model:", object:GetFullName())
+            return nil
+        end
+
+        if part:FindFirstChild("FackhubBox") then
+            return nil
+        end
+
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "FackhubBox"
+        box.Adornee = part
+        box.AlwaysOnTop = true
+        box.ZIndex = 10
+        box.Size = size or part.Size
+        box.Color3 = color
+        box.Transparency = transparency
+        box.Parent = part
+
+        return box
+    end
+
+    return nil
+end
+
+local function InteractPrompt(object, delayTime)
+    if not object then return end
+
+    local prompt = object
+
+    if not object:IsA("ProximityPrompt") then
+        prompt = object:FindFirstChild("ProximityPrompt", true)
+    end
+
+    if prompt and prompt:IsA("ProximityPrompt") then
+        if delayTime and delayTime > 0 then
+            task.wait(delayTime)
+        end
+
+        prompt.Enabled = true
+        fireproximityprompt(prompt)
+    end
+end
+
+local function TeleportTo(targetPosition)
+    if not hrp or not targetPosition then
+        return
+    end
+
+    if typeof(targetPosition) == "CFrame" then
+        hrp.CFrame = targetPosition
+
+    elseif typeof(targetPosition) == "Vector3" then
+        hrp.CFrame = CFrame.new(targetPosition)
+
+    elseif typeof(targetPosition) == "Instance" then
+
+        if targetPosition:IsA("BasePart") then
+            hrp.CFrame = targetPosition.CFrame
+
+        elseif targetPosition:IsA("Model") then
+            local root = targetPosition:FindFirstChild("HumanoidRootPart")
+                or targetPosition.PrimaryPart
+                or targetPosition:FindFirstChildWhichIsA("BasePart", true)
+
+            if root then
+                hrp.CFrame = root.CFrame
+            end
+        end
+    end
+end
+
+local function TeleportToNearestSafeLight(folder)
+    local nearest = nil
+    local shortest = math.huge
+
+    for _, v in ipairs(folder:GetChildren()) do
+        if v:IsA("BasePart") then
+            local distance = (hrp.Position - v.Position).Magnitude
+
+            if distance < shortest then
+                shortest = distance
+                nearest = v
+            end
+        end
+    end
+
+    if nearest then
+        TeleportTo(nearest)
+    end
+end
+
+local savedCFrame = nil
+
+local function SaveCFrame()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    savedCFrame = hrp.CFrame
+end
+
+local function ReturnCFrame()
+    if not savedCFrame then
+        return
+    end
+
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    hrp.CFrame = savedCFrame
+end
+
+local function GetMonsterRoot(monster)
+    if monster:IsA("Model") then
+        return monster:FindFirstChild("HumanoidRootPart")
+            or monster.PrimaryPart
+            or monster:FindFirstChildWhichIsA("BasePart", true)
+    elseif monster:IsA("BasePart") then
+        return monster
+    end
+
+    return nil
+end
+
+
+local function IsMonsterNear(monsterPath, target, maxDistance)
+    if not monsterPath or not target then
+        return false
+    end
+
+    local targetPosition
+
+    if target:IsA("BasePart") then
+        targetPosition = target.Position
+    elseif typeof(target) == "Vector3" then
+        targetPosition = target
+    else
+        return false
+    end
+
+    for _, monster in ipairs(monsterPath:GetChildren()) do
+        local root = GetMonsterRoot(monster)
+
+        if root then
+            local distance = (root.Position - targetPosition).Magnitude
+
+            if distance <= maxDistance then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+local c4Tab = Window:CreateTab("Lisa", "align-justify")
+
+local Section = c4Tab:CreateSection("Part 1")
+
+local Button = c4Tab:CreateButton({
+    Name = "Auto Win",
+
+    Callback = function()
+
+        SaveCFrame()
+
+        -- ==========================================
+        -- ตั้งค่ามอนสเตอร์
+        -- ==========================================
+
+        local MonsterPath = workspace.Monsters
+        local MonsterDistance = 30
+
+
+        -- ==========================================
+        -- ระบบเก็บ Items
+        -- ==========================================
+
+        local collectedItems = {}
+
+        while true do
+
+            local found = false
+
+            for _, v in ipairs(workspace.MainPuzzle.Items:GetChildren()) do
+
+                if v:IsA("MeshPart") and not collectedItems[v] then
+
+                    -- มีมอนอยู่ใกล้ → ข้ามก่อน
+                    if IsMonsterNear(
+                        MonsterPath,
+                        v,
+                        MonsterDistance
+                    ) then
+                        continue
+                    end
+
+                    -- ไม่มีมอน → เข้าไปเก็บ
+                    found = true
+
+                    TeleportTo(v)
+                    task.wait(0.3)
+
+                    local prompt =
+                        v:FindFirstChildWhichIsA("ProximityPrompt", true)
+                        or (
+                            v.Parent
+                            and v.Parent:FindFirstChildWhichIsA(
+                                "ProximityPrompt",
+                                true
+                            )
+                        )
+
+                    if prompt then
+                        InteractPrompt(prompt, 0)
+                    end
+
+                    collectedItems[v] = true
+
+                    task.wait(0.1)
+                end
+            end
+
+
+            -- ==========================================
+            -- ตรวจว่ายังมี Item เหลือไหม
+            -- ==========================================
+
+            if not found then
+
+                local hasUncollected = false
+
+                for _, v in ipairs(workspace.MainPuzzle.Items:GetChildren()) do
+                    if v:IsA("MeshPart") and not collectedItems[v] then
+                        hasUncollected = true
+                        break
+                    end
+                end
+
+                if not hasUncollected then
+                    break
+                end
+
+                -- ยังมีของ แต่ติดมอน
+                ReturnCFrame()
+                task.wait(0.2)
+            end
+        end
+
+
+        -- ==========================================
+        -- ระบบ PlaceTrigger
+        -- ==========================================
+
+        local placed = {}
+
+        while true do
+
+            local found = false
+
+            for _, v in ipairs(workspace.MainPuzzle:GetChildren()) do
+
+                if v:IsA("Part")
+                    and v.Name == "PlaceTrigger"
+                    and not placed[v] then
+
+                    -- มีมอนอยู่ใกล้ → ข้ามก่อน
+                    if IsMonsterNear(
+                        MonsterPath,
+                        v,
+                        MonsterDistance
+                    ) then
+                        continue
+                    end
+
+                    -- ไม่มีมอน → เข้าไปทำ
+                    found = true
+
+                    TeleportTo(v)
+                    task.wait(0.3)
+
+                    local prompt =
+                        v:FindFirstChildWhichIsA("ProximityPrompt", true)
+                        or (
+                            v.Parent
+                            and v.Parent:FindFirstChildWhichIsA(
+                                "ProximityPrompt",
+                                true
+                            )
+                        )
+
+                    if prompt then
+                        InteractPrompt(prompt, 0)
+                    end
+
+                    placed[v] = true
+
+                    task.wait(0.1)
+                end
+            end
+
+
+            -- ==========================================
+            -- ตรวจว่ายังมี PlaceTrigger เหลือไหม
+            -- ==========================================
+
+            if not found then
+
+                local hasUnplaced = false
+
+                for _, v in ipairs(workspace.MainPuzzle:GetChildren()) do
+                    if v:IsA("Part")
+                        and v.Name == "PlaceTrigger"
+                        and not placed[v] then
+
+                        hasUnplaced = true
+                        break
+                    end
+                end
+
+                if not hasUnplaced then
+                    break
+                end
+
+                -- ยังมี PlaceTrigger แต่ติดมอน
+                ReturnCFrame()
+                task.wait(0.2)
+            end
+        end
+
+
+        -- ==========================================
+        -- กลับจุดเดิม
+        -- ==========================================
+
+        ReturnCFrame()
+        task.wait(0.2)
+
+
+        -- ==========================================
+        -- ไป ExitTrigger
+        -- ==========================================
+
+        local ExitTrigger = workspace.MainPuzzle:FindFirstChild("ExitTrigger")
+
+        if ExitTrigger then
+
+            -- ถ้ามอนอยู่ใกล้ทางออก ให้รอก่อน
+            while IsMonsterNear(
+                MonsterPath,
+                ExitTrigger,
+                MonsterDistance
+            ) do
+                ReturnCFrame()
+                task.wait(0.2)
+            end
+
+            TeleportTo(ExitTrigger)
+        end
+    end,
+})
+
+local Section = c4Tab:CreateSection("ESP item")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Rose",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.MainPuzzle.Items:GetChildren()) do
+                if v:IsA("MeshPart") then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    -- CreateESPText(v, v.Name, Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.MainPuzzle.Items:GetChildren()) do
+                if v:IsA("MeshPart") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Section = c4Tab:CreateSection("ESP Monster")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,v.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local c4Tab = Window:CreateTab("The Eye", "align-justify")
+
+local Section = c4Tab:CreateSection("Part 2")
+
+local Button = c4Tab:CreateButton({
+   Name = "Auto Win",
+   Callback = function()
+   pcall(function()
+        TeleportTo(workspace.TheEye.ExitTrigger)
+    end)
+   end,
+})
+
+local c4Tab = Window:CreateTab("CrawlingMonster", "align-justify")
+
+local Section = c4Tab:CreateSection("Part 3")
+
+local Button = c4Tab:CreateButton({
+   Name = "Auto elevator button",
+   Callback = function()
+        for _, v in ipairs(workspace.SecondSection:GetChildren()) do
+            if  v.Name == "ElevatorButton" then
+                TeleportTo(v)
+                task.wait(0.3)
+
+                local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or v.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+   end,
+})
+
+local Button = c4Tab:CreateButton({
+    Name = "Auto press button",
+
+    Callback = function()
+
+        SaveCFrame()
+
+        -- ==========================================
+        -- ตั้งค่ามอนสเตอร์
+        -- ==========================================
+
+        local MonsterPath = workspace.Monsters
+        local MonsterDistance = 30
+
+        -- ไป Objective2
+        pcall(function()
+            TeleportTo(workspace.Dialogue.Objective2)
+            task.wait(0.3)
+        end)
+
+        -- ==========================================
+        -- ระบบกด Button
+        -- ==========================================
+
+        local pressed = {}
+
+        while true do
+
+            local found = false
+
+            for _, v in ipairs(
+                workspace.SecondSection.MonsterPart.DisplayCases:GetChildren()
+            ) do
+
+                if v:IsA("Model")
+                    and string.find(v.Name, "Button")
+                    and not pressed[v] then
+
+                    local bo = v:FindFirstChild("Button")
+
+                    if bo then
+
+                        -- มีมอนอยู่ใกล้ปุ่ม → ข้ามก่อน
+                        if IsMonsterNear(
+                            MonsterPath,
+                            bo,
+                            MonsterDistance
+                        ) then
+                            continue
+                        end
+
+                        -- ไม่มีมอน → วาปไปกด
+                        found = true
+
+                        TeleportTo(bo)
+                        task.wait(0.3)
+
+                        -- เช็กมอนอีกครั้งหลังวาป
+                        if IsMonsterNear(
+                            MonsterPath,
+                            bo,
+                            MonsterDistance
+                        ) then
+
+                            ReturnCFrame()
+                            task.wait(0.2)
+
+                            continue
+                        end
+
+                        local prompt =
+                            bo:FindFirstChildWhichIsA(
+                                "ProximityPrompt",
+                                true
+                            )
+                            or (
+                                bo.Parent
+                                and bo.Parent:FindFirstChildWhichIsA(
+                                    "ProximityPrompt",
+                                    true
+                                )
+                            )
+
+                        if prompt then
+                            InteractPrompt(prompt, 0)
+                        end
+
+                        pressed[v] = true
+
+                        task.wait(0.1)
+                    end
+                end
+            end
+
+            -- ==========================================
+            -- ตรวจว่ามี Button ที่ยังไม่ได้กดไหม
+            -- ==========================================
+
+            if not found then
+
+                local hasUnpressed = false
+
+                for _, v in ipairs(
+                    workspace.SecondSection.MonsterPart.DisplayCases:GetChildren()
+                ) do
+
+                    if v:IsA("Model")
+                        and string.find(v.Name, "Button")
+                        and not pressed[v] then
+
+                        if v:FindFirstChild("Button") then
+                            hasUnpressed = true
+                            break
+                        end
+                    end
+                end
+
+                -- กดครบแล้ว
+                if not hasUnpressed then
+                    break
+                end
+
+                -- ยังมีปุ่ม แต่มอนขวางอยู่
+                ReturnCFrame()
+                task.wait(0.2)
+            end
+        end
+
+        -- ==========================================
+        -- กลับจุดเดิม
+        -- ==========================================
+
+        ReturnCFrame()
+    end,
+})
+
+local Button = c4Tab:CreateButton({
+   Name = "Auto item collection",
+   Callback = function()
+   SaveCFrame()
+        for _, v in ipairs(workspace.SecondSection.MonsterPart:GetChildren()) do
+            if  v:IsA("MeshPart") and string.find(v.Name, "HAT") then
+                TeleportTo(v)
+                task.wait(0.3)
+
+                local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or v.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+        for _, v in ipairs(workspace.Monsters:GetDescendants()) do
+            if v.Name == "Hat"  then
+                TeleportTo(v.CFrame * CFrame.new (0,13,0))
+                task.wait(0.3)
+
+                local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or v.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+        for _, v in ipairs(workspace.SecondSection.MonsterPart.DisplayCases:GetDescendants()) do
+            if v:IsA("Model") and string.find(v.Name, "DisplayCase")  then
+                local tt = v.Trigger
+                TeleportTo(tt)
+                task.wait(0.3)
+
+                local prompt = tt:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or tt.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+    ReturnCFrame()
+   end,
+})
+
+local Button = c4Tab:CreateButton({
+   Name = "Exit",
+   Callback = function()
+   pcall(function()
+        TeleportTo(workspace.SecondSection.EndingSection.ExitTrigger)
+    end)
+   end,
+})
+
+local Section = c4Tab:CreateSection("ESP item")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp DisplayCase",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.SecondSection.MonsterPart.DisplayCases:GetChildren()) do
+                if v:IsA("Model") and string.find(v.Name, "DisplayCase") then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, v.Name, Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.SecondSection.MonsterPart.DisplayCases:GetChildren()) do
+                if v:IsA("Model") and string.find(v.Name, "DisplayCase") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Button",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.SecondSection.MonsterPart.DisplayCases:GetChildren()) do
+                if v:IsA("Model") and string.find(v.Name, "Button") then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, v.Name, Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.SecondSection.MonsterPart.DisplayCases:GetChildren()) do
+                if v:IsA("Model") and string.find(v.Name, "Button") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Section = c4Tab:CreateSection("ESP Monster")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,v.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local c4Tab = Window:CreateTab("Ballerina", "align-justify")
+
+local Section = c4Tab:CreateSection("Part 4")
+
+local Button = c4Tab:CreateButton({
+   Name = "Auto Keycard",
+   Callback = function()
+        for _, v in ipairs(workspace.SecondSection:GetChildren()) do
+            if  v.Name == "KeycardBox" then
+                local ba = v.Base
+                TeleportTo(ba)
+                task.wait(0.3)
+                local pp = v.Keycard
+                local prompt = pp:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or pp.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+        for _, v in ipairs(workspace.SecondSection:GetChildren()) do
+            if  v.Name == "KeycardReader" then
+                local pa = v.Pad
+                TeleportTo(pa)
+                task.wait(0.3)
+                local ppo = v.Base
+                local prompt = ppo:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or ppo.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+   end,
+})
+
+local Section = c4Tab:CreateSection("ESP item")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Lever",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.SecondSection:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Lever" then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, v.Name, Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.SecondSection:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Lever" then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Paragraph = c4Tab:CreateParagraph({Title = "Read!!!", Content = "You must pull all 6 levers before enabling ESP Button."})
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Button",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.SecondSection.Buttons:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Button" then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, v.Name, Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.SecondSection.Buttons:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Button" then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Section = c4Tab:CreateSection("ESP Monster")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,v.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local c4Tab = Window:CreateTab("Lever", "align-justify")
+
+local Section = c4Tab:CreateSection("Part 5")
+
+local Button = c4Tab:CreateButton({
+   Name = "Auto Win",
+   Callback = function()
+    for i,v in pairs(workspace.Dialogue:GetChildren()) do
+        if v:IsA("Part") then
+        TeleportTo(v)
+        task.wait(0.5)
+        end
+    end
+        for _, v in ipairs(workspace.GatePuzzle:GetChildren()) do
+            if  v.Name == "Lever" then
+                TeleportTo(v)
+                task.wait(0.3)
+                local pp = v.Lever1
+                local prompt = pp:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or pp.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+        task.wait()
+        TeleportTo(workspace.GameInfo.ExitPart)
+   end,
+})
+
+local Section = c4Tab:CreateSection("ESP item")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Lever",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.GatePuzzle:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Lever" then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, v.Name, Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.GatePuzzle:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Lever" then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Section = c4Tab:CreateSection("ESP Monster")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Monster1",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monster1:GetChildren()) do
+                if v:IsA("Model") then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,"Monster1",Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monster1:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Monster2",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monster2:GetChildren()) do
+                if v:IsA("Model") then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,"Monster2",Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monster2:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local c4Tab = Window:CreateTab("HatredBody", "align-justify")
+
+local Section = c4Tab:CreateSection("Part 6")
+
+local Button = c4Tab:CreateButton({
+   Name = "Auto Win",
+   Callback = function()
+    TeleportTo(workspace.TorchPuzzle.TorchEventTrigger)
+    task.wait(3)
+        TeleportTo()
+            for _, v in ipairs(workspace.TorchPuzzle:GetChildren()) do
+                if  v.Name == "TakeTorch" then
+                    TeleportTo(v)
+                    task.wait(0.3)
+                    local pp = v.Handle
+                    local prompt = pp:FindFirstChildWhichIsA("ProximityPrompt", true)
+                        or pp.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    InteractPrompt(prompt, 0)
+                end
+            end
+            task.wait(0.5)
+            for _, v in ipairs(workspace.TorchPuzzle:GetChildren()) do
+                if  v.Name == "PlaceTrigger" then
+                    TeleportTo(v)
+                    task.wait(0.3)
+                    local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+                        or v.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    InteractPrompt(prompt, 0)
+                end
+            end
+        task.wait(3)
+        TeleportTo(workspace.TorchPuzzle.ExitPart)
+   end,
+})
+
+local Section = c4Tab:CreateSection("ESP item")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Torch",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.TorchPuzzle:GetChildren()) do
+                if v:IsA("Model") and v.Name == "TakeTorch" then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, "Torch", Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.TorchPuzzle:GetChildren()) do
+                if v:IsA("Model") and v.Name == "TakeTorch" then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Katana",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.KatanaPlacePuzzle.Items:GetChildren()) do
+                if v:IsA("MeshPart") then
+                CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                CreateESPText(v,v.Name,Color3.fromRGB(0, 255, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.KatanaPlacePuzzle.Items:GetChildren()) do
+                if v:IsA("MeshPart") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Section = c4Tab:CreateSection("ESP Monster")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.HatredBodies:GetChildren()) do
+                if v:IsA("Model") then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                -- CreateESPText(v,"Monster1",Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.HatredBodies:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Paragraph = c4Tab:CreateParagraph({Title = "Read!!!", Content = "You must collect all the lights before enabling ESP Monster 2."})
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Monster 2",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.AppearingHatredBodies:GetChildren()) do
+                if v:IsA("Model") then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                -- CreateESPText(v,"Monster1",Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.AppearingHatredBodies:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local c4Tab = Window:CreateTab("RUN", "align-justify")
+
+local Section = c4Tab:CreateSection("Part 7")
+
+local Button = c4Tab:CreateButton({
+   Name = "Auto Win",
+   Callback = function()
+   local E = workspace.ChaseSequence.EndingTrigger
+    TeleportTo(E.CFrame * CFrame.new(0, 3 ,0))
+   end,
+})
+
+local c4Tab = Window:CreateTab("Guardian", "align-justify")
+
+local Section = c4Tab:CreateSection("Part 8")
+
+local Button = c4Tab:CreateButton({
+   Name = "Auto Win",
+   Callback = function()
+    -- TeleportTo(workspace.TorchPuzzle.TorchEventTrigger)
+    -- task.wait(3)
+            for _, v in ipairs(workspace.SecondSection:GetChildren()) do
+                if  v.Name == "BlackOrb" then
+                    TeleportTo(v)
+                    task.wait(0.3)
+                    local pp = v
+                    local prompt = pp:FindFirstChildWhichIsA("ProximityPrompt", true)
+                        or pp.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    InteractPrompt(prompt, 0)
+                end
+            end
+            task.wait(0.5)
+            -- for _, v in ipairs(workspace.TorchPuzzle:GetChildren()) do
+            --     if  v.Name == "PlaceTrigger" then
+            --         TeleportTo(v)
+            --         task.wait(0.3)
+            --         local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+            --             or v.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+            --         InteractPrompt(prompt, 0)
+            --     end
+            -- end
+   end,
+})
+
+local Section = c4Tab:CreateSection("ESP item")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Orb",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.SecondSection.Orbs:GetChildren()) do
+                if v:IsA("Part") then
+                    local c = v.Color
+                    CreateESPBox(v,c,Vector3.new(5, 5, 5))
+                    CreateESPText(v, v.Name, c, Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.SecondSection.Orbs:GetChildren()) do
+                if v:IsA("Part") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Candle",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.SecondSection:GetChildren()) do
+                if v:IsA("Model") then
+                    local c = v.Light.PointLight.Color
+                    CreateESPBox(v,c,Vector3.new(2, 3, 2))
+                    CreateESPText(v, v.Name, c, Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.SecondSection:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Section = c4Tab:CreateSection("ESP Monster")
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Guardian1",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Guardian1" then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,v.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Guardian1" then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Toggle = c4Tab:CreateToggle({
+    Name = "esp Guardian2",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Guardian2" then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,v.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Guardian2" then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
