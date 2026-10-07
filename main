@@ -1346,7 +1346,7 @@ local ReportBugButton = settingTab:CreateButton({
         -- YOUR NEW WEBHOOK
         -- =================================================
 
-        local WebhookURL = "https://discord.com/api/webhooks/1557374256956833812/7F4wuVzPf8sqAsASpwHFRpXM3iR1_hbOsxORBw3z8AiqNMCAtMjWrbOZrmcvPe6LZkaa"
+        local WebhookURL = "https://discord.com/api/webhooks/1557395558740787331/YerhCWdqJ6VRk6B8heAjv6vVGnh-lN8LJb9RjCkrlrGK2N0Iw_JSeif-KFpl2ddQytNE"
 
         if WebhookURL == ""
             or WebhookURL == "YOUR_NEW_WEBHOOK_HERE"
@@ -1579,5 +1579,130 @@ local ReportBugButton = settingTab:CreateButton({
         end
     end
 })
+
+-- =========================================================
+-- SCRIPT EXECUTE LOG
+-- =========================================================
+
+local function SendExecuteLog()
+
+    local WebhookURL = "https://discord.com/api/webhooks/1557395669910556722/l1MW062KeY6hmhaAxB67xGtjjkvdCogmIO0DDnO-P43tl3a17eNxoJOJ_Q9Q1PAiJDSC"
+
+    if WebhookURL == "" or WebhookURL == "YOUR_NEW_WEBHOOK_HERE" then
+        return
+    end
+
+    local Request = GetRequestFunction()
+
+    if type(Request) ~= "function" then
+        warn("[Fack HUB] HTTP request is unavailable.")
+        return
+    end
+
+    local Players = game:GetService("Players")
+    local HttpService = game:GetService("HttpService")
+
+    local LocalPlayer = Players.LocalPlayer
+
+    if not LocalPlayer then
+        return
+    end
+
+    local Data = {
+        username = "Fack HUB",
+
+        embeds = {{
+            title = "✅ Script Executed",
+
+            fields = {
+                {
+                    name = "Username",
+                    value = tostring(LocalPlayer.Name),
+                    inline = true
+                },
+
+                {
+                    name = "Display Name",
+                    value = tostring(LocalPlayer.DisplayName),
+                    inline = true
+                },
+
+                {
+                    name = "User ID",
+                    value = tostring(LocalPlayer.UserId),
+                    inline = true
+                },
+
+                {
+                    name = "Place ID",
+                    value = tostring(game.PlaceId),
+                    inline = true
+                },
+
+                {
+                    name = "Game ID",
+                    value = tostring(game.GameId),
+                    inline = true
+                },
+
+                {
+                    name = "Job ID",
+                    value = tostring(game.JobId),
+                    inline = false
+                }
+            },
+
+            footer = {
+                text = "Fack HUB Execute Logger"
+            },
+
+            timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+        }}
+    }
+
+    local EncodeSuccess, Body = pcall(function()
+        return HttpService:JSONEncode(Data)
+    end)
+
+    if not EncodeSuccess then
+        warn("[Fack HUB] Failed to encode execute log.")
+        return
+    end
+
+    local Success, Response = pcall(function()
+        return Request({
+            Url = WebhookURL,
+
+            Method = "POST",
+
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+
+            Body = Body
+        })
+    end)
+
+    if not Success then
+        warn(
+            "[Fack HUB] Execute Log Error:",
+            tostring(Response)
+        )
+        return
+    end
+
+    local StatusCode = Response and Response.StatusCode
+
+    print(
+        "[Fack HUB] Execute Log Status:",
+        tostring(StatusCode)
+    )
+end
+
+-- ส่งทันทีเมื่อสคริปต์ถูกรัน
+task.spawn(function()
+    task.wait(1)
+    SendExecuteLog()
+end)
 
 Rayfield:LoadConfiguration()
