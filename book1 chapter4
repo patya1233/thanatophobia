@@ -933,27 +933,74 @@ local c4Tab = Window:CreateTab("Lever", "align-justify")
 local Section = c4Tab:CreateSection("Part 5")
 
 local Button = c4Tab:CreateButton({
-   Name = "Auto Win",
-   Callback = function()
-    for i,v in pairs(workspace.Dialogue:GetChildren()) do
-        if v:IsA("Part") then
-        TeleportTo(v)
-        task.wait(0.5)
-        end
-    end
-        for _, v in ipairs(workspace.GatePuzzle:GetChildren()) do
-            if  v.Name == "Lever" then
+    Name = "Auto Win",
+
+    Callback = function()
+
+        -- ==========================================
+        -- ไป Dialogue ก่อน
+        -- ==========================================
+        for _, v in ipairs(workspace.Dialogue:GetChildren()) do
+            if v:IsA("Part") then
                 TeleportTo(v)
-                task.wait(0.3)
-                local pp = v.Lever1
-                local prompt = pp:FindFirstChildWhichIsA("ProximityPrompt", true)
-                    or pp.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
-                InteractPrompt(prompt, 0)
+                task.wait(0.5)
             end
         end
-        task.wait()
+
+        -- ==========================================
+        -- โยก Lever จนกว่าจะครบ 8
+        -- ==========================================
+        local GatePuzzle = workspace.GatePuzzle
+        local LeversPulled = GatePuzzle:WaitForChild("LeversPulled")
+
+        while LeversPulled.Value < 8 do
+
+            for _, v in ipairs(GatePuzzle:GetChildren()) do
+
+                -- เช็กก่อนว่าโยกครบแล้วหรือยัง
+                if LeversPulled.Value >= 8 then
+                    break
+                end
+
+                if v.Name == "Lever" then
+
+                    local pp = v:FindFirstChild("Lever1")
+
+                    if pp then
+                        TeleportTo(v)
+                        task.wait(0.3)
+
+                        local prompt =
+                            pp:FindFirstChildWhichIsA(
+                                "ProximityPrompt",
+                                true
+                            )
+                            or (
+                                pp.Parent
+                                and pp.Parent:FindFirstChildWhichIsA(
+                                    "ProximityPrompt",
+                                    true
+                                )
+                            )
+
+                        if prompt then
+                            InteractPrompt(prompt, 0)
+                        end
+
+                        task.wait(0.1)
+                    end
+                end
+            end
+
+            -- เผื่อค่าจะอัปเดตช้าจาก Server
+            task.wait()
+        end
+
+        -- ==========================================
+        -- ครบ 8 แล้วไปทางออก
+        -- ==========================================
         TeleportTo(workspace.GameInfo.ExitPart)
-   end,
+    end,
 })
 
 local Section = c4Tab:CreateSection("ESP item")
