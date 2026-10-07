@@ -712,10 +712,6 @@ local uTab = Window:CreateTab("Update", "align-justify")
 -- Update Log
 -- ==========================================
 
--- ==========================================
--- Update Log
--- ==========================================
-
 local UpdateLog = uTab:CreateParagraph({
     Title = "📜 Update Log",
     Content = "Version 1.0 • Latest Features"
@@ -724,6 +720,15 @@ local UpdateLog = uTab:CreateParagraph({
 -- ==========================================
 -- UPDATE 1.0
 -- ==========================================
+
+local GameMode = uTab:CreateParagraph({
+    Title = "🎮 Game Mode",
+    Content = [[
+⚙️ Auto Complete
+• Working on Auto Complete for additional Game Modes.
+• Game Mode support coming soon.
+]]
+})
 
 local Update10 = uTab:CreateParagraph({
     Title = "🚀 Update 1.0",
@@ -760,7 +765,7 @@ local Update10 = uTab:CreateParagraph({
 local Chapter1 = uTab:CreateParagraph({
     Title = "📘 Book 1 | Chapter 1",
     Content = [[
-✅ Added Auto Success
+✅ Added Auto Complete
 👾 Added ESP Monster
 📦 Added ESP Item
 ]]
@@ -769,7 +774,7 @@ local Chapter1 = uTab:CreateParagraph({
 local Chapter2 = uTab:CreateParagraph({
     Title = "📗 Book 1 | Chapter 2",
     Content = [[
-✅ Added Auto Success
+✅ Added Auto Complete
 👾 Added ESP Monster
 📦 Added ESP Item
 ]]
@@ -778,7 +783,7 @@ local Chapter2 = uTab:CreateParagraph({
 local Chapter3 = uTab:CreateParagraph({
     Title = "📙 Book 1 | Chapter 3",
     Content = [[
-✅ Added Auto Success
+✅ Added Auto Complete
 👾 Added ESP Monster
 📦 Added ESP Item
 ]]
@@ -787,7 +792,7 @@ local Chapter3 = uTab:CreateParagraph({
 local Chapter4 = uTab:CreateParagraph({
     Title = "📕 Book 1 | Chapter 4",
     Content = [[
-✅ Added Auto Success
+✅ Added Auto Complete
 👾 Added ESP Monster
 📦 Added ESP Item
 ]]
@@ -800,7 +805,7 @@ local Chapter4 = uTab:CreateParagraph({
 local Book2Chapter1 = uTab:CreateParagraph({
     Title = "📖 Book 2 | Chapter 1",
     Content = [[
-✅ Added Auto Success
+✅ Added Auto Complete
 👾 Added ESP Monster
 📦 Added ESP Item
 ]]
