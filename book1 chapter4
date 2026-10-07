@@ -937,10 +937,18 @@ local Button = c4Tab:CreateButton({
 
     Callback = function()
 
+        SaveCFrame()
+
         -- ==========================================
-        -- ไป Dialogue ก่อน
+        -- ตั้งค่ามอนสเตอร์
         -- ==========================================
-        for _, v in ipairs(workspace.Dialogue:GetChildren()) do
+        local MonsterPath = workspace.Monsters
+        local MonsterDistance = 30
+
+        -- ==========================================
+        -- Dialogue
+        -- ==========================================
+        for i, v in pairs(workspace.Dialogue:GetChildren()) do
             if v:IsA("Part") then
                 TeleportTo(v)
                 task.wait(0.5)
@@ -948,57 +956,72 @@ local Button = c4Tab:CreateButton({
         end
 
         -- ==========================================
-        -- โยก Lever จนกว่าจะครบ 8
+        -- Lever
         -- ==========================================
-        local GatePuzzle = workspace.GatePuzzle
-        local LeversPulled = GatePuzzle:WaitForChild("LeversPulled")
+        for _, v in ipairs(workspace.GatePuzzle:GetChildren()) do
 
-        while LeversPulled.Value < 8 do
+            if v.Name == "Lever" then
 
-            for _, v in ipairs(GatePuzzle:GetChildren()) do
+                local pp = v:FindFirstChild("Lever1")
 
-                -- เช็กก่อนว่าโยกครบแล้วหรือยัง
-                if LeversPulled.Value >= 8 then
-                    break
-                end
+                if pp then
 
-                if v.Name == "Lever" then
+                    -- ถ้ามอนอยู่ใกล้ ให้กลับจุดเดิมและรอ
+                    while IsMonsterNear(
+                        MonsterPath,
+                        pp,
+                        MonsterDistance
+                    ) do
+                        ReturnCFrame()
+                        task.wait(0.2)
+                    end
 
-                    local pp = v:FindFirstChild("Lever1")
+                    -- ไม่มีมอนแล้ว → วาปไป Lever
+                    TeleportTo(v)
+                    task.wait(0.3)
 
-                    if pp then
+                    -- เช็กอีกครั้งหลังวาป
+                    if IsMonsterNear(
+                        MonsterPath,
+                        pp,
+                        MonsterDistance
+                    ) then
+                        ReturnCFrame()
+
+                        repeat
+                            task.wait(0.2)
+                        until not IsMonsterNear(
+                            MonsterPath,
+                            pp,
+                            MonsterDistance
+                        )
+
                         TeleportTo(v)
                         task.wait(0.3)
+                    end
 
-                        local prompt =
-                            pp:FindFirstChildWhichIsA(
+                    local prompt =
+                        pp:FindFirstChildWhichIsA(
+                            "ProximityPrompt",
+                            true
+                        )
+                        or (
+                            pp.Parent
+                            and pp.Parent:FindFirstChildWhichIsA(
                                 "ProximityPrompt",
                                 true
                             )
-                            or (
-                                pp.Parent
-                                and pp.Parent:FindFirstChildWhichIsA(
-                                    "ProximityPrompt",
-                                    true
-                                )
-                            )
+                        )
 
-                        if prompt then
-                            InteractPrompt(prompt, 0)
-                        end
-
-                        task.wait(0.1)
+                    if prompt then
+                        InteractPrompt(prompt, 0)
                     end
                 end
             end
-
-            -- เผื่อค่าจะอัปเดตช้าจาก Server
-            task.wait()
         end
 
-        -- ==========================================
-        -- ครบ 8 แล้วไปทางออก
-        -- ==========================================
+        task.wait()
+
         TeleportTo(workspace.GameInfo.ExitPart)
     end,
 })
