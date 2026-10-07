@@ -1,0 +1,616 @@
+local Window = getgenv().FackWindowb1fi
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+player.CharacterAdded:Connect(function(char)
+    character = char
+    hrp = char:WaitForChild("HumanoidRootPart")
+end)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local function RemoveESP(object)
+    if not object then return end
+
+    -- ลบ Object ที่ชื่อมีคำว่า "Fackhub"
+    for _, obj in ipairs(object:GetDescendants()) do
+        if string.find(obj.Name, "Fackhub", 1, true) then
+            obj:Destroy()
+        end
+    end
+
+    -- เช็กตัว object เองด้วย
+    if string.find(object.Name, "Fackhub", 1, true) then
+        object:Destroy()
+    end
+end
+
+local function CreateHighlight(object, fillColor, outlineColor, fillTrans, outlineTrans)
+    if not object then return end
+    if object:FindFirstChild("FackhubHighlight") then return end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "FackhubHighlight"
+    highlight.FillColor = fillColor or Color3.fromRGB(255, 255, 255)
+    highlight.OutlineColor = outlineColor or Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = fillTrans or 0.5
+    highlight.OutlineTransparency = outlineTrans or 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = object
+
+    return highlight
+end
+
+
+-- 2. ฟังก์ชันสร้าง BillboardGui / ESP Text
+local function CreateESPText(object, text, color, offset, size)
+    if not object then return end
+    if object:FindFirstChild("FackhubText") then return end
+
+    color = color or Color3.fromRGB(255, 255, 255)
+    offset = offset or Vector3.new(0, 3, 0)
+    size = size or UDim2.new(0, 150, 0, 40)
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "FackhubText"
+    billboard.Size = size
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = offset
+    billboard.Parent = object
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = text or object.Name
+    textLabel.TextColor3 = color
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Parent = billboard
+
+    return billboard
+end
+
+
+local function CreateESPBox(object, color, size, transparency)
+    if not object then
+        return nil
+    end
+
+    color = color or Color3.fromRGB(0, 255, 0)
+    transparency = transparency or 0.5
+
+    -- Part / MeshPart / UnionOperation ฯลฯ
+    if object:IsA("BasePart") then
+        if object:FindFirstChild("FackhubBox") then
+            return nil
+        end
+
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "FackhubBox"
+        box.Adornee = object
+        box.AlwaysOnTop = true
+        box.ZIndex = 10
+        box.Size = size or object.Size
+        box.Color3 = color
+        box.Transparency = transparency
+        box.Parent = object
+
+        return box
+    end
+
+    -- Model
+    if object:IsA("Model") then
+        local part = object:FindFirstChild("HumanoidRootPart")
+            or object.PrimaryPart
+            or object:FindFirstChildWhichIsA("BasePart", true)
+
+        if not part then
+            warn("ไม่พบ BasePart ใน Model:", object:GetFullName())
+            return nil
+        end
+
+        if part:FindFirstChild("FackhubBox") then
+            return nil
+        end
+
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "FackhubBox"
+        box.Adornee = part
+        box.AlwaysOnTop = true
+        box.ZIndex = 10
+        box.Size = size or part.Size
+        box.Color3 = color
+        box.Transparency = transparency
+        box.Parent = part
+
+        return box
+    end
+
+    return nil
+end
+
+local function InteractPrompt(object, delayTime)
+    if not object then return end
+
+    local prompt = object
+
+    if not object:IsA("ProximityPrompt") then
+        prompt = object:FindFirstChild("ProximityPrompt", true)
+    end
+
+    if prompt and prompt:IsA("ProximityPrompt") then
+        if delayTime and delayTime > 0 then
+            task.wait(delayTime)
+        end
+
+        prompt.Enabled = true
+        fireproximityprompt(prompt)
+    end
+end
+
+local function TeleportTo(targetPosition)
+    if not hrp or not targetPosition then
+        return
+    end
+
+    if typeof(targetPosition) == "CFrame" then
+        hrp.CFrame = targetPosition
+
+    elseif typeof(targetPosition) == "Vector3" then
+        hrp.CFrame = CFrame.new(targetPosition)
+
+    elseif typeof(targetPosition) == "Instance" then
+
+        if targetPosition:IsA("BasePart") then
+            hrp.CFrame = targetPosition.CFrame
+
+        elseif targetPosition:IsA("Model") then
+            local root = targetPosition:FindFirstChild("HumanoidRootPart")
+                or targetPosition.PrimaryPart
+                or targetPosition:FindFirstChildWhichIsA("BasePart", true)
+
+            if root then
+                hrp.CFrame = root.CFrame
+            end
+        end
+    end
+end
+
+local function TeleportToNearestSafeLight(folder)
+    local nearest = nil
+    local shortest = math.huge
+
+    for _, v in ipairs(folder:GetChildren()) do
+        local targetPosition
+
+        if v:IsA("BasePart") then
+            targetPosition = v.Position
+
+        elseif v:IsA("Model") then
+            targetPosition = v:GetPivot().Position
+        end
+
+        if targetPosition then
+            local distance = (hrp.Position - targetPosition).Magnitude
+
+            if distance < shortest then
+                shortest = distance
+                nearest = v
+            end
+        end
+    end
+
+    if nearest then
+        TeleportTo(nearest)
+    end
+end
+
+local savedCFrame = nil
+
+local function SaveCFrame()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    savedCFrame = hrp.CFrame
+end
+
+local function ReturnCFrame()
+    if not savedCFrame then
+        return
+    end
+
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    hrp.CFrame = savedCFrame
+end
+
+local function GetMonsterRoot(monster)
+    if monster:IsA("Model") then
+        return monster:FindFirstChild("HumanoidRootPart")
+            or monster.PrimaryPart
+            or monster:FindFirstChildWhichIsA("BasePart", true)
+    elseif monster:IsA("BasePart") then
+        return monster
+    end
+
+    return nil
+end
+
+
+local function IsMonsterNear(monsterPath, target, maxDistance)
+    if not monsterPath or not target then
+        return false
+    end
+
+    local targetPosition
+
+    if target:IsA("BasePart") then
+        targetPosition = target.Position
+    elseif typeof(target) == "Vector3" then
+        targetPosition = target
+    else
+        return false
+    end
+
+    for _, monster in ipairs(monsterPath:GetChildren()) do
+        local root = GetMonsterRoot(monster)
+
+        if root then
+            local distance = (root.Position - targetPosition).Magnitude
+
+            if distance <= maxDistance then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+local FloatConnection = nil
+
+local function StartFloat()
+    if FloatConnection then
+        FloatConnection:Disconnect()
+        FloatConnection = nil
+    end
+
+    FloatConnection = RunService.Heartbeat:Connect(function()
+        if hrp and hrp.Parent then
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+        end
+    end)
+end
+
+local function StopFloat()
+    if FloatConnection then
+        FloatConnection:Disconnect()
+        FloatConnection = nil
+    end
+end
+
+local fiTab = Window:CreateTab("LordEmperorSaito", "align-justify")
+
+local Section = fiTab:CreateSection("Part 1")
+
+local Button = fiTab:CreateButton({
+   Name = "Auto Spawn Boss",
+   Callback = function()
+   pcall(function()
+        TeleportTo(workspace.GameBlocks.ObjectiveBlocks.Objective1)
+        task.wait(0.5)
+        end)
+
+        StartFloat()
+        for _, v in ipairs(workspace.MainPuzzle:GetChildren()) do
+            if v:IsA("Model") and v.Name == "WhiteTorch" then
+                TeleportTo(v)
+                task.wait(0.3)
+
+                local pp = v.Handle
+                local prompt = pp:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or pp.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+        task.wait()
+        for _, v in ipairs(workspace.MainPuzzle:GetChildren()) do
+            if v:IsA("Part") and v.Name == "BurnTrigger" then
+                TeleportTo(v)
+                task.wait(0.3)
+
+                local pp = v
+                local prompt = pp:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or pp.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+        task.wait(0.5)
+        TeleportToNearestSafeLight(workspace.SafeLanterns)
+        StopFloat()
+   end,
+})
+
+local Button = fiTab:CreateButton({
+    Name = "Auto Burn Cursed",
+
+    Callback = function()
+
+        StartFloat()
+
+        local MainPuzzle = workspace.MainPuzzle
+        local MonsterPath = workspace:FindFirstChild("Monsters", true)
+
+        -- ระยะกันมอนเฉพาะ Cursed
+        local CursedMonsterDistance = 30
+
+        local SaitoHealth = MainPuzzle:WaitForChild("SaitoHealth")
+
+        while SaitoHealth.Value > 0 do
+
+            -- ==========================================
+            -- 1. เก็บ Cursed
+            -- ==========================================
+            for _, v in ipairs(
+                MainPuzzle.CursedFolder:GetChildren()
+            ) do
+
+                if v:IsA("Model") then
+
+                    local pp = v:FindFirstChild("Cursed")
+
+                    if pp then
+
+                        -- กันมอนเฉพาะ Cursed
+                        while MonsterPath
+                            and IsMonsterNear(
+                                MonsterPath,
+                                pp,
+                                CursedMonsterDistance
+                            ) do
+
+                            TeleportToNearestSafeLight(
+                                workspace.SafeLanterns
+                            )
+
+                            task.wait(0.2)
+                        end
+
+                        TeleportTo(v)
+                        task.wait(0.3)
+
+                        local prompt =
+                            pp:FindFirstChildWhichIsA(
+                                "ProximityPrompt",
+                                true
+                            )
+                            or (
+                                pp.Parent
+                                and pp.Parent:FindFirstChildWhichIsA(
+                                    "ProximityPrompt",
+                                    true
+                                )
+                            )
+
+                        if prompt then
+                            InteractPrompt(prompt, 0)
+                        end
+                    end
+                end
+            end
+
+            -- ==========================================
+            -- 2. BurnTrigger
+            -- ไม่มีระบบหลบมอน
+            -- ==========================================
+            for _, v in ipairs(
+                MainPuzzle:GetDescendants()
+            ) do
+
+                if v:IsA("BasePart") and v.Name == "BurnTrigger" then
+
+                    TeleportTo(v)
+                    task.wait(0.3)
+
+                    local prompt =
+                        v:FindFirstChildWhichIsA(
+                            "ProximityPrompt",
+                            true
+                        )
+                        or (
+                            v.Parent
+                            and v.Parent:FindFirstChildWhichIsA(
+                                "ProximityPrompt",
+                                true
+                            )
+                        )
+
+                    if prompt then
+                        InteractPrompt(prompt, 0)
+                    end
+                end
+            end
+
+            -- ==========================================
+            -- 3. ทำครบแล้วค่อยเช็ก Health
+            -- ==========================================
+            task.wait()
+
+            if SaitoHealth.Value <= 0 then
+                break
+            end
+        end
+
+        TeleportToNearestSafeLight(
+            workspace.SafeLanterns
+        )
+
+        StopFloat()
+    end,
+})
+
+local Section = fiTab:CreateSection("ESP item")
+
+local Toggle = fiTab:CreateToggle({
+    Name = "esp Torch",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.MainPuzzle:GetChildren()) do
+                if v:IsA("Model") and v.Name == "WhiteTorch" then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 5, 2))
+                    CreateESPText(v, v.Name, Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.MainPuzzle:GetChildren()) do
+                if v:IsA("Model") and v.Name == "WhiteTorch" then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Toggle = fiTab:CreateToggle({
+    Name = "esp Cursed",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.MainPuzzle.CursedFolder:GetChildren()) do
+                if v:IsA("Model") then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(5, 5, 5))
+                    CreateESPText(v, "Cursed", Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.MainPuzzle.CursedFolder:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Section = fiTab:CreateSection("ESP Monster")
+
+local Toggle = fiTab:CreateToggle({
+    Name = "esp Monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,v.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local fiTab = Window:CreateTab("DistortedSaito", "align-justify")
+
+local Section = fiTab:CreateSection("Part 2")
+
+local Button = fiTab:CreateButton({
+   Name = "Auto Win",
+   Callback = function()
+   pcall(function()
+        TeleportTo(workspace.GameBlocks.ObjectiveBlocks.Objective1)
+        task.wait(0.5)
+        end)
+        SaveCFrame()
+        StartFloat()
+        for _, v in ipairs(workspace.MainPuzzle.Notes:GetChildren()) do
+            if v:IsA("BasePart") then
+                TeleportTo(v)
+                task.wait(0.3)
+
+                local pp = v
+                local prompt = pp:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    or pp.Parent:FindFirstChildWhichIsA("ProximityPrompt", true)
+                InteractPrompt(prompt, 0)
+            end
+        end
+        task.wait()
+        StopFloat()
+        ReturnCFrame()
+   end,
+})
+
+local Section = fiTab:CreateSection("ESP item")
+
+local Toggle = fiTab:CreateToggle({
+    Name = "esp Note",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.MainPuzzle.Notes:GetChildren()) do
+                if v:IsA("BasePart") then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, v.Name, Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.MainPuzzle.Notes:GetChildren()) do
+                if v:IsA("BasePart") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Section = fiTab:CreateSection("ESP Monster")
+
+local Toggle = fiTab:CreateToggle({
+    Name = "esp Monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,v.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
