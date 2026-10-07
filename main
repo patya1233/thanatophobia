@@ -1161,32 +1161,103 @@ local InstantPromptToggle = mTab:CreateToggle({
     end,
 })
 
-if table.find({9092235391, 10075338474, 9093637813}, game.PlaceId) then
+local v1 = {
+    9853683724,
+    9853556888,
+    9862324994,
+}
+
+local v2 = {
+    9092235391,
+    10075338474,
+    9093637813,
+    9332225653,
+    140123405526797,
+    10170336666,
+}
+
+local v3 = {
+    9259800926,
+    13195508181,
+    9156571392,
+    12801125140,
+    12883101350,
+    9295359692,
+    9499235219,
+    13378955962,
+    9498438236,
+    9499009475,
+    9499475476,
+}
+
+local v4 = {
+    13501077730,
+    13554879107,
+    13578253043,
+    13578253076,
+    14043796378,
+    10000496703,
+    9349305566,
+    9550270434,
+    9550428983,
+    9550609486,
+    9550735862,
+    9550813064,
+    10001818133,
+    9550926946,
+}
+
+local v5 = {
+    9367041361,
+    9383406248,
+    9389257930,
+    9446931315,
+    9456110688,
+    15821897127,
+    15821899891,
+    9480604331,
+    15821901513,
+    15867590071,
+    15867719117,
+    15867831920,
+    15868146488,
+    15868242659,
+    15868342330,
+    15868554853,
+    15868633656,
+}
+
+local v6 = {
+    9506167885,
+    9511354089,
+}
+
+if table.find(v2, game.PlaceId) then
     getgenv().FackWindowb1c1 = Window
     loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter1"))()
 end
 
-if table.find({9156571392, 12801125140, 9259800926, 13195508181, 9295359692}, game.PlaceId) then
+if table.find(v3, game.PlaceId) then
     getgenv().FackWindowb1c2 = Window
     loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter2"))()
 end
 
-if table.find({13501077730, 13554879107, 13578253043, 13578253076, 14043796378, 10000496703, 9349305566}, game.PlaceId) then
+if table.find(v4, game.PlaceId) then
     getgenv().FackWindowb1c3 = Window
     loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter3"))()
 end
 
-if table.find({9367041361, 9383406248, 9389257930, 9446931315, 9456110688, 15821897127, 15821899891, 9480604331}, game.PlaceId) then
+if table.find(v5, game.PlaceId) then
     getgenv().FackWindowb1c4 = Window
     loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter4"))()
 end
 
-if table.find({9506167885, 9511354089}, game.PlaceId) then
+if table.find(v6, game.PlaceId) then
     getgenv().FackWindowb1fi = Window
     loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/final"))()
 end
 
-if table.find({9853683724, 9853556888, 9862324994}, game.PlaceId) then
+if table.find(v1, game.PlaceId) then
     getgenv().FackWindowb2c1 = Window
     loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book2%20chapter1"))()
 end
