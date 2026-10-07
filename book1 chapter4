@@ -940,15 +940,15 @@ local Button = c4Tab:CreateButton({
         SaveCFrame()
 
         -- ==========================================
-        -- ตั้งค่ามอนสเตอร์
+        -- หา Folder/Model ชื่อ Monsters อัตโนมัติ
         -- ==========================================
-        local MonsterPath = workspace.Monsters
+        local MonsterPath = workspace:FindFirstChild("Monsters", true)
         local MonsterDistance = 30
 
         -- ==========================================
         -- Dialogue
         -- ==========================================
-        for i, v in pairs(workspace.Dialogue:GetChildren()) do
+        for _, v in ipairs(workspace.Dialogue:GetChildren()) do
             if v:IsA("Part") then
                 TeleportTo(v)
                 task.wait(0.5)
@@ -966,26 +966,30 @@ local Button = c4Tab:CreateButton({
 
                 if pp then
 
-                    -- ถ้ามอนอยู่ใกล้ ให้กลับจุดเดิมและรอ
-                    while IsMonsterNear(
-                        MonsterPath,
-                        pp,
-                        MonsterDistance
-                    ) do
+                    -- ถ้ามอนอยู่ใกล้ → กลับจุดเดิมและรอ
+                    while MonsterPath
+                        and IsMonsterNear(
+                            MonsterPath,
+                            pp,
+                            MonsterDistance
+                        ) do
+
                         ReturnCFrame()
                         task.wait(0.2)
                     end
 
-                    -- ไม่มีมอนแล้ว → วาปไป Lever
+                    -- วาปไป Lever
                     TeleportTo(v)
                     task.wait(0.3)
 
-                    -- เช็กอีกครั้งหลังวาป
-                    if IsMonsterNear(
-                        MonsterPath,
-                        pp,
-                        MonsterDistance
-                    ) then
+                    -- เช็กมอนอีกครั้งหลังวาป
+                    if MonsterPath
+                        and IsMonsterNear(
+                            MonsterPath,
+                            pp,
+                            MonsterDistance
+                        ) then
+
                         ReturnCFrame()
 
                         repeat
