@@ -1,0 +1,1578 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Fack HUB",
+   Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
+   LoadingTitle = "Thanatophobia",
+   LoadingSubtitle = "by KENG",
+   Theme = "Default", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
+
+   ConfigurationSaving = {
+    Enabled = true,
+    FolderName = "FackHUB",
+    FileName = "FackHUB"
+    },
+
+   Discord = {
+      Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
+      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
+      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+   },
+
+   KeySystem = false, -- Set this to true to use our key system
+   KeySettings = {
+      Title = "Untitled",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
+      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+      Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+   }
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- ========================================
+-- Shared Character
+-- ========================================
+
+local Character = nil
+local Humanoid = nil
+
+-- ========================================
+-- Original Values
+-- ========================================
+
+local OriginalWalkSpeed = 16
+local OriginalJumpPower = 50
+local OriginalJumpHeight = 7.2
+local OriginalUseJumpPower = true
+
+-- ========================================
+-- Walk Speed
+-- ========================================
+
+local WalkSpeedEnabled = false
+local WalkSpeedValue = 16
+
+-- ========================================
+-- Jump Power
+-- ========================================
+
+local JumpPowerEnabled = false
+local JumpPowerValue = 50
+
+-- ========================================
+-- TPWalk
+-- ========================================
+
+local TPWalkEnabled = false
+local TPWalkSpeed = 1
+local TPWalkingConnection = nil
+
+-- ========================================
+-- Float
+-- ========================================
+
+local FloatEnabled = false
+local FloatPart = nil
+local FloatLoop = nil
+
+-- ระยะห่างระหว่างตัวละครกับแผ่น Float
+local FloatOffset = -3.1
+
+-- ========================================
+-- Instant Proximity Prompt
+-- ========================================
+
+local InstantPromptEnabled = false
+local InstantPromptConnection = nil
+
+-- Prompt ที่เคยปรับแล้ว
+local ModifiedPrompts = setmetatable({}, {__mode = "k"})
+
+local NoclipEnabled = false
+local NoclipConnection = nil
+local NoclipOriginalStates = {}
+
+
+-- ========================================
+-- Fly
+-- ========================================
+
+local FlyEnabled = false
+local FlySpeedValue = 1
+
+local FlyConnection = nil
+local FlyInputBegan = nil
+local FlyInputEnded = nil
+
+local FlyBodyVelocity = nil
+local FlyBodyGyro = nil
+
+local FlyControls = {
+    W = 0,
+    A = 0,
+    S = 0,
+    D = 0,
+    Q = 0,
+    E = 0
+}
+
+-- ========================================
+-- Setup Character
+-- ========================================
+
+local function SetupCharacter(NewCharacter)
+
+    Character = NewCharacter
+    Humanoid = Character:WaitForChild("Humanoid")
+
+    -- จำค่าจริงจากตัวละครใหม่
+    OriginalWalkSpeed = Humanoid.WalkSpeed
+    OriginalJumpPower = Humanoid.JumpPower
+    OriginalJumpHeight = Humanoid.JumpHeight
+    OriginalUseJumpPower = Humanoid.UseJumpPower
+
+    -- Walk Speed
+    if WalkSpeedEnabled then
+        Humanoid.WalkSpeed = WalkSpeedValue
+    end
+
+    -- Jump Power
+    if JumpPowerEnabled then
+
+        if Humanoid.UseJumpPower then
+            Humanoid.JumpPower = JumpPowerValue
+        else
+            Humanoid.JumpHeight = JumpPowerValue
+        end
+
+    end
+end
+
+
+-- ========================================
+-- Current Character
+-- ========================================
+
+if LocalPlayer.Character then
+    SetupCharacter(LocalPlayer.Character)
+end
+
+
+-- ========================================
+-- TPWalk Start
+-- ========================================
+
+local function StartTPWalk()
+
+    if TPWalkingConnection then
+        TPWalkingConnection:Disconnect()
+        TPWalkingConnection = nil
+    end
+
+    if not Character or not Humanoid then
+        return
+    end
+
+    TPWalkingConnection = RunService.Heartbeat:Connect(function(delta)
+
+        if not TPWalkEnabled then
+            return
+        end
+
+        if not Character or not Character.Parent then
+            return
+        end
+
+        if not Humanoid or not Humanoid.Parent then
+            return
+        end
+
+        if Humanoid.Health <= 0 then
+            return
+        end
+
+        if Humanoid.MoveDirection.Magnitude > 0 then
+
+            Character:TranslateBy(
+                Humanoid.MoveDirection
+                * TPWalkSpeed
+                * delta
+                * 10
+            )
+
+        end
+
+    end)
+end
+
+
+-- ========================================
+-- TPWalk Stop
+-- ========================================
+
+local function StopTPWalk()
+
+    if TPWalkingConnection then
+        TPWalkingConnection:Disconnect()
+        TPWalkingConnection = nil
+    end
+
+end
+
+
+-- ========================================
+-- Remove Float Part
+-- ========================================
+
+local function RemoveFloatPart()
+    if FloatPart then
+        FloatPart:Destroy()
+        FloatPart = nil
+    end
+end
+
+
+-- ========================================
+-- Stop Float
+-- ========================================
+
+local function StopFloat()
+
+    FloatEnabled = false
+
+    if FloatLoop then
+        FloatLoop:Disconnect()
+        FloatLoop = nil
+    end
+
+    RemoveFloatPart()
+end
+
+
+-- ========================================
+-- Start Float
+-- ========================================
+
+local function StartFloat()
+
+    -- เคลียร์ของเก่าก่อนทุกครั้ง
+    if FloatLoop then
+        FloatLoop:Disconnect()
+        FloatLoop = nil
+    end
+
+    RemoveFloatPart()
+
+    if not Character or not Character.Parent then
+        return
+    end
+
+    Humanoid = Character:FindFirstChildOfClass("Humanoid")
+
+    if not Humanoid or Humanoid.Health <= 0 then
+        return
+    end
+
+    local Root = Character:FindFirstChild("HumanoidRootPart")
+
+    if not Root then
+        return
+    end
+
+    FloatEnabled = true
+
+    -- สร้างแผ่น Float ใหม่
+    FloatPart = Instance.new("Part")
+    FloatPart.Name = "FackHubFloat"
+    FloatPart.Size = Vector3.new(2.5, 0.2, 2.5)
+    FloatPart.Transparency = 1
+    FloatPart.Anchored = true
+    FloatPart.CanCollide = true
+    FloatPart.CanTouch = false
+    FloatPart.CanQuery = false
+    FloatPart.Parent = workspace
+
+    -- วางครั้งแรก
+    FloatPart.CFrame =
+        Root.CFrame * CFrame.new(0, FloatOffset, 0)
+
+    -- ให้แผ่นตามตัวละคร
+    FloatLoop = RunService.Heartbeat:Connect(function()
+
+        if not FloatEnabled then
+            return
+        end
+
+        if not Character or not Character.Parent then
+            return
+        end
+
+        if not Humanoid or not Humanoid.Parent then
+            return
+        end
+
+        if Humanoid.Health <= 0 then
+            return
+        end
+
+        local CurrentRoot =
+            Character:FindFirstChild("HumanoidRootPart")
+
+        if CurrentRoot and FloatPart then
+            FloatPart.CFrame =
+                CurrentRoot.CFrame
+                * CFrame.new(0, FloatOffset, 0)
+        end
+
+    end)
+end
+
+
+-- ========================================
+-- Instant Proximity Start
+-- ========================================
+
+local function StartInstantProximity()
+
+    if InstantPromptConnection then
+        InstantPromptConnection:Disconnect()
+        InstantPromptConnection = nil
+    end
+
+    InstantPromptConnection =
+        ProximityPromptService.PromptShown:Connect(function(prompt)
+
+            if not InstantPromptEnabled then
+                return
+            end
+
+            -- ปรับแล้วไม่ต้องปรับซ้ำ
+            if ModifiedPrompts[prompt] then
+                return
+            end
+
+            pcall(function()
+
+                prompt.HoldDuration = 0
+
+                ModifiedPrompts[prompt] = true
+
+            end)
+
+        end)
+end
+
+
+-- ========================================
+-- Instant Proximity Stop
+-- ========================================
+
+local function StopInstantProximity()
+
+    if InstantPromptConnection then
+        InstantPromptConnection:Disconnect()
+        InstantPromptConnection = nil
+    end
+
+end
+
+-- ========================================
+-- Start Noclip
+-- ========================================
+
+local function StartNoclip()
+
+    if NoclipConnection then
+        NoclipConnection:Disconnect()
+        NoclipConnection = nil
+    end
+
+    if not Character then
+        return
+    end
+
+    NoclipOriginalStates = {}
+
+    NoclipConnection = RunService.Stepped:Connect(function()
+
+        if not NoclipEnabled then
+            return
+        end
+
+        if not Character or not Character.Parent then
+            return
+        end
+
+        for _, Part in ipairs(Character:GetDescendants()) do
+
+            if Part:IsA("BasePart") then
+
+                if NoclipOriginalStates[Part] == nil then
+                    NoclipOriginalStates[Part] = Part.CanCollide
+                end
+
+                if Part.CanCollide then
+                    Part.CanCollide = false
+                end
+
+            end
+
+        end
+
+    end)
+end
+
+
+-- ========================================
+-- Stop Noclip
+-- ========================================
+
+local function StopNoclip()
+
+    if NoclipConnection then
+        NoclipConnection:Disconnect()
+        NoclipConnection = nil
+    end
+
+    for Part, OriginalValue in pairs(NoclipOriginalStates) do
+
+        if typeof(Part) == "Instance"
+            and Part:IsA("BasePart")
+            and Part.Parent then
+
+            Part.CanCollide = OriginalValue
+
+        end
+
+    end
+
+    NoclipOriginalStates = {}
+
+end
+
+-- ========================================
+-- Stop Fly
+-- ========================================
+
+local function StopFly()
+
+    FlyEnabled = false
+
+    if FlyInputBegan then
+        FlyInputBegan:Disconnect()
+        FlyInputBegan = nil
+    end
+
+    if FlyInputEnded then
+        FlyInputEnded:Disconnect()
+        FlyInputEnded = nil
+    end
+
+    if FlyConnection then
+        FlyConnection:Disconnect()
+        FlyConnection = nil
+    end
+
+    if FlyBodyVelocity then
+        FlyBodyVelocity:Destroy()
+        FlyBodyVelocity = nil
+    end
+
+    if FlyBodyGyro then
+        FlyBodyGyro:Destroy()
+        FlyBodyGyro = nil
+    end
+
+    if Humanoid and Humanoid.Parent then
+        Humanoid.PlatformStand = false
+    end
+
+    table.clear(FlyControls)
+
+    FlyControls = {
+        W = 0,
+        A = 0,
+        S = 0,
+        D = 0,
+        Q = 0,
+        E = 0
+    }
+
+    pcall(function()
+        workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+    end)
+
+end
+
+
+-- ========================================
+-- Start Fly
+-- ========================================
+
+local function StartFly()
+
+    StopFly()
+
+    if not Character or not Character.Parent then
+        return
+    end
+
+    Humanoid = Character:FindFirstChildOfClass("Humanoid")
+
+    if not Humanoid or Humanoid.Health <= 0 then
+        return
+    end
+
+    local Root = Character:FindFirstChild("HumanoidRootPart")
+
+    if not Root then
+        return
+    end
+
+    FlyEnabled = true
+
+    FlyBodyGyro = Instance.new("BodyGyro")
+    FlyBodyGyro.Name = "FackHubFlyGyro"
+    FlyBodyGyro.P = 90000
+    FlyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    FlyBodyGyro.CFrame = Root.CFrame
+    FlyBodyGyro.Parent = Root
+
+    FlyBodyVelocity = Instance.new("BodyVelocity")
+    FlyBodyVelocity.Name = "FackHubFlyVelocity"
+    FlyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    FlyBodyVelocity.Velocity = Vector3.zero
+    FlyBodyVelocity.Parent = Root
+
+
+    -- ====================================
+    -- Keyboard Input
+    -- ====================================
+
+    FlyInputBegan = UserInputService.InputBegan:Connect(function(Input, Processed)
+
+        if Processed or not FlyEnabled then
+            return
+        end
+
+        if Input.KeyCode == Enum.KeyCode.W then
+            FlyControls.W = 1
+
+        elseif Input.KeyCode == Enum.KeyCode.S then
+            FlyControls.S = -1
+
+        elseif Input.KeyCode == Enum.KeyCode.A then
+            FlyControls.A = -1
+
+        elseif Input.KeyCode == Enum.KeyCode.D then
+            FlyControls.D = 1
+
+        elseif Input.KeyCode == Enum.KeyCode.E then
+            FlyControls.E = 1
+
+        elseif Input.KeyCode == Enum.KeyCode.Q then
+            FlyControls.Q = -1
+        end
+
+    end)
+
+
+    FlyInputEnded = UserInputService.InputEnded:Connect(function(Input, Processed)
+
+        if Processed then
+            return
+        end
+
+        if Input.KeyCode == Enum.KeyCode.W then
+            FlyControls.W = 0
+
+        elseif Input.KeyCode == Enum.KeyCode.S then
+            FlyControls.S = 0
+
+        elseif Input.KeyCode == Enum.KeyCode.A then
+            FlyControls.A = 0
+
+        elseif Input.KeyCode == Enum.KeyCode.D then
+            FlyControls.D = 0
+
+        elseif Input.KeyCode == Enum.KeyCode.E then
+            FlyControls.E = 0
+
+        elseif Input.KeyCode == Enum.KeyCode.Q then
+            FlyControls.Q = 0
+        end
+
+    end)
+
+
+    -- ====================================
+    -- Fly Loop
+    -- ====================================
+
+    FlyConnection = RunService.RenderStepped:Connect(function()
+
+        if not FlyEnabled then
+            return
+        end
+
+        if not Character or not Character.Parent then
+            return
+        end
+
+        if not Humanoid or Humanoid.Health <= 0 then
+            return
+        end
+
+        local CurrentRoot =
+            Character:FindFirstChild("HumanoidRootPart")
+
+        if not CurrentRoot then
+            return
+        end
+
+        if not FlyBodyVelocity or not FlyBodyGyro then
+            return
+        end
+
+        local Camera = workspace.CurrentCamera
+
+        if not Camera then
+            return
+        end
+
+        local Direction =
+            (Camera.CFrame.LookVector
+                * (FlyControls.W + FlyControls.S))
+
+            + (Camera.CFrame.RightVector
+                * (FlyControls.A + FlyControls.D))
+
+            + (Vector3.new(0, 1, 0)
+                * (FlyControls.Q + FlyControls.E))
+
+        local Speed = FlySpeedValue * 50
+
+        if Direction.Magnitude > 0 then
+            FlyBodyVelocity.Velocity =
+                Direction.Unit * Speed
+        else
+            FlyBodyVelocity.Velocity = Vector3.zero
+        end
+
+        FlyBodyGyro.CFrame = Camera.CFrame
+
+        Humanoid.PlatformStand = true
+
+    end)
+end
+
+-- ========================================
+-- Character Respawn
+-- ========================================
+
+LocalPlayer.CharacterAdded:Connect(function(NewCharacter)
+
+    SetupCharacter(NewCharacter)
+
+    task.wait(0.2)
+
+    if TPWalkEnabled then
+        StartTPWalk()
+    end
+
+    if FloatEnabled then
+        StartFloat()
+    end
+
+    if NoclipEnabled then
+        StartNoclip()
+    end
+
+    if FlyEnabled then
+        StartFly()
+    end
+
+end)
+
+local uTab = Window:CreateTab("Update", "align-justify")
+
+-- ==========================================
+-- Update Log
+-- ==========================================
+
+-- ==========================================
+-- Update Log
+-- ==========================================
+
+local UpdateLog = uTab:CreateParagraph({
+    Title = "📜 Update Log",
+    Content = "Version 1.0 • Latest Features"
+})
+
+-- ==========================================
+-- UPDATE 1.0
+-- ==========================================
+
+local Update10 = uTab:CreateParagraph({
+    Title = "🚀 Update 1.0",
+    Content = [[
+💡 New Features
+
+🌙 Fulbright
+• Added Fulbright
+• Improved visibility in dark areas
+
+🏃 Movement
+• Added Walk Speed
+• Added Jump Power
+• Added TPWalk
+• Added Float
+• Added Fly
+• Added Noclip
+
+👾 ESP
+• Added ESP Monster
+• Added ESP Item
+
+⚙️ Settings
+• Added Theme selection
+• Added Report Bug system
+• Added Bug Description input
+]]
+})
+
+-- ==========================================
+-- BOOK 1
+-- ==========================================
+
+local Chapter1 = uTab:CreateParagraph({
+    Title = "📘 Book 1 | Chapter 1",
+    Content = [[
+✅ Added Auto Success
+👾 Added ESP Monster
+📦 Added ESP Item
+]]
+})
+
+local Chapter2 = uTab:CreateParagraph({
+    Title = "📗 Book 1 | Chapter 2",
+    Content = [[
+✅ Added Auto Success
+👾 Added ESP Monster
+📦 Added ESP Item
+]]
+})
+
+local Chapter3 = uTab:CreateParagraph({
+    Title = "📙 Book 1 | Chapter 3",
+    Content = [[
+✅ Added Auto Success
+👾 Added ESP Monster
+📦 Added ESP Item
+]]
+})
+
+local Chapter4 = uTab:CreateParagraph({
+    Title = "📕 Book 1 | Chapter 4",
+    Content = [[
+✅ Added Auto Success
+👾 Added ESP Monster
+📦 Added ESP Item
+]]
+})
+
+-- ==========================================
+-- BOOK 2
+-- ==========================================
+
+local Book2Chapter1 = uTab:CreateParagraph({
+    Title = "📖 Book 2 | Chapter 1",
+    Content = [[
+✅ Added Auto Success
+👾 Added ESP Monster
+📦 Added ESP Item
+]]
+})
+
+local mTab = Window:CreateTab("Main", "align-justify")
+
+local lighting = game:GetService("Lighting")
+
+local OriginalLighting = {
+    Ambient = lighting.Ambient,
+    Brightness = lighting.Brightness,
+    GlobalShadows = lighting.GlobalShadows,
+    OutdoorAmbient = lighting.OutdoorAmbient
+}
+
+local lighting = game:GetService("Lighting")
+
+local OriginalLighting = {
+    Ambient = lighting.Ambient,
+    Brightness = lighting.Brightness,
+    GlobalShadows = lighting.GlobalShadows,
+    OutdoorAmbient = lighting.OutdoorAmbient
+}
+
+local OriginalSkies = {}
+
+pcall(function()
+    for _, v in ipairs(lighting:GetChildren()) do
+        if v:IsA("Sky") then
+            table.insert(OriginalSkies, v:Clone())
+        end
+    end
+end)
+
+local Section = mTab:CreateSection("Noclip")
+
+local NoclipToggle = mTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "NoclipToggle",
+
+    Callback = function(Value)
+
+        NoclipEnabled = Value
+
+        if Value then
+            StartNoclip()
+        else
+            StopNoclip()
+        end
+
+    end,
+})
+
+local Section = mTab:CreateSection("Fly")
+
+local FlySpeedSlider = mTab:CreateSlider({
+    Name = "Fly Speed",
+    Range = {1, 20},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = 1,
+    Flag = "FlySpeedSlider",
+
+    Callback = function(Value)
+
+        FlySpeedValue = Value
+
+    end,
+})
+
+local FlyToggle = mTab:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Flag = "FlyToggle",
+
+    Callback = function(Value)
+
+        FlyEnabled = Value
+
+        if Value then
+            StartFly()
+        else
+            StopFly()
+        end
+
+    end,
+})
+
+local Section = mTab:CreateSection("Lighting")
+
+local Toggle = mTab:CreateToggle({
+    Name = "Fulbright",
+    CurrentValue = false,
+    Flag = "FulbrightToggle",
+
+    Callback = function(Value)
+        pcall(function()
+
+            if Value then
+
+                lighting.Ambient = Color3.fromRGB(255, 255, 255)
+                lighting.Brightness = 10
+                lighting.GlobalShadows = false
+                lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+
+                -- ลบ Sky ทั้งหมดจริง ๆ
+                for _, v in ipairs(lighting:GetChildren()) do
+                    if v:IsA("Sky") then
+                        v:Destroy()
+                    end
+                end
+
+            else
+
+                -- คืนค่า Lighting
+                lighting.Ambient = OriginalLighting.Ambient
+                lighting.Brightness = OriginalLighting.Brightness
+                lighting.GlobalShadows = OriginalLighting.GlobalShadows
+                lighting.OutdoorAmbient = OriginalLighting.OutdoorAmbient
+
+                -- ลบ Sky ที่เหลืออยู่
+                for _, v in ipairs(lighting:GetChildren()) do
+                    if v:IsA("Sky") then
+                        v:Destroy()
+                    end
+                end
+
+                -- คืน Sky เดิมทั้งหมด
+                for _, SkyClone in ipairs(OriginalSkies) do
+                    pcall(function()
+                        SkyClone:Clone().Parent = lighting
+                    end)
+                end
+
+            end
+
+        end)
+    end,
+})
+
+local Section = mTab:CreateSection("Walk Speed")
+
+local WalkSpeedSlider = mTab:CreateSlider({
+    Name = "Walk Speed",
+    Range = {16, 100},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = 16,
+    Flag = "WalkSpeedSlider",
+
+    Callback = function(Value)
+
+        WalkSpeedValue = Value
+
+        if WalkSpeedEnabled and Humanoid then
+            Humanoid.WalkSpeed = Value
+        end
+
+    end,
+})
+
+
+-- ========================================
+-- Walk Speed Toggle
+-- ========================================
+
+local WalkSpeedToggle = mTab:CreateToggle({
+    Name = "Enable Walk Speed",
+    CurrentValue = false,
+    Flag = "WalkSpeedToggle",
+
+    Callback = function(Value)
+
+        WalkSpeedEnabled = Value
+
+        if not Humanoid then
+            return
+        end
+
+        if Value then
+
+            Humanoid.WalkSpeed = WalkSpeedValue
+
+        else
+
+            Humanoid.WalkSpeed = OriginalWalkSpeed
+
+        end
+
+    end,
+})
+
+local Section = mTab:CreateSection("Jump Power")
+
+-- ========================================
+-- Jump Power Slider
+-- ========================================
+
+local JumpPowerSlider = mTab:CreateSlider({
+    Name = "Jump Power",
+    Range = {50, 200},
+    Increment = 1,
+    Suffix = "Power",
+    CurrentValue = 50,
+    Flag = "JumpPowerSlider",
+
+    Callback = function(Value)
+
+        JumpPowerValue = Value
+
+        if JumpPowerEnabled and Humanoid then
+
+            if Humanoid.UseJumpPower then
+                Humanoid.JumpPower = Value
+            else
+                Humanoid.JumpHeight = Value
+            end
+
+        end
+
+    end,
+})
+
+
+-- ========================================
+-- Jump Power Toggle
+-- ========================================
+
+local JumpPowerToggle = mTab:CreateToggle({
+    Name = "Enable Jump Power",
+    CurrentValue = false,
+    Flag = "JumpPowerToggle",
+
+    Callback = function(Value)
+
+        JumpPowerEnabled = Value
+
+        if not Humanoid then
+            return
+        end
+
+        if Value then
+
+            if Humanoid.UseJumpPower then
+                Humanoid.JumpPower = JumpPowerValue
+            else
+                Humanoid.JumpHeight = JumpPowerValue
+            end
+
+        else
+
+            Humanoid.UseJumpPower = OriginalUseJumpPower
+
+            if OriginalUseJumpPower then
+                Humanoid.JumpPower = OriginalJumpPower
+            else
+                Humanoid.JumpHeight = OriginalJumpHeight
+            end
+
+        end
+
+    end,
+})
+
+local Section = mTab:CreateSection("TPWalk")
+
+-- ========================================
+-- TPWalk Slider
+-- ========================================
+
+local TPWalkSlider = mTab:CreateSlider({
+    Name = "TPWalk Speed",
+    Range = {1, 20},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = 1,
+    Flag = "TPWalkSpeedSlider",
+
+    Callback = function(Value)
+        TPWalkSpeed = Value
+    end,
+})
+
+
+-- ========================================
+-- TPWalk Toggle
+-- ========================================
+
+local TPWalkToggle = mTab:CreateToggle({
+    Name = "Enable TPWalk",
+    CurrentValue = false,
+    Flag = "TPWalkToggle",
+
+    Callback = function(Value)
+
+        TPWalkEnabled = Value
+
+        if Value then
+            StartTPWalk()
+        else
+            StopTPWalk()
+        end
+
+    end,
+})
+
+local Section = mTab:CreateSection("Float")
+
+-- ========================================
+-- Float Toggle
+-- ========================================
+
+local FloatToggle = mTab:CreateToggle({
+    Name = "Float",
+    CurrentValue = false,
+    Flag = "FloatToggle",
+
+    Callback = function(Value)
+
+        if Value then
+            FloatEnabled = true
+            StartFloat()
+        else
+            StopFloat()
+        end
+
+    end,
+})
+
+local Section = mTab:CreateSection("Instant Proximity Prompt")
+
+-- ========================================
+-- Instant Proximity Prompt Toggle
+-- ========================================
+
+local InstantPromptToggle = mTab:CreateToggle({
+    Name = "Instant Proximity Prompt",
+    CurrentValue = false,
+    Flag = "InstantProximityPrompt",
+
+    Callback = function(Value)
+
+        InstantPromptEnabled = Value
+
+        if Value then
+            StartInstantProximity()
+        else
+            StopInstantProximity()
+        end
+
+    end,
+})
+
+if table.find({9092235391, 10075338474, 9093637813}, game.PlaceId) then
+    getgenv().FackWindowb1c1 = Window
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter1"))()
+end
+
+if table.find({9156571392, 12801125140, 9259800926, 13195508181, 9295359692}, game.PlaceId) then
+    getgenv().FackWindowb1c2 = Window
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter2"))()
+end
+
+if table.find({13501077730, 13554879107, 13578253043, 13578253076, 14043796378, 10000496703, 9349305566}, game.PlaceId) then
+    getgenv().FackWindowb1c3 = Window
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter3"))()
+end
+
+if table.find({9367041361, 9383406248, 9389257930, 9446931315, 9456110688, 15821897127, 15821899891, 9480604331}, game.PlaceId) then
+    getgenv().FackWindowb1c4 = Window
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter4"))()
+end
+
+if table.find({9506167885, 9511354089}, game.PlaceId) then
+    getgenv().FackWindowb1fi = Window
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/final"))()
+end
+
+if table.find({9853683724, 9853556888, 9862324994}, game.PlaceId) then
+    getgenv().FackWindowb2c1 = Window
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book2%20chapter1"))()
+end
+
+-- =========================================================
+-- SETTING TAB
+-- =========================================================
+
+local settingTab = Window:CreateTab("Setting", "settings")
+
+-- =========================================================
+-- THEME
+-- =========================================================
+
+settingTab:CreateSection("Theme")
+
+local ThemeDropdown = settingTab:CreateDropdown({
+    Name = "Theme",
+
+    Options = {
+        "Default",
+        "AmberGlow",
+        "Amethyst",
+        "Bloom",
+        "DarkBlue",
+        "Green",
+        "Light",
+        "Ocean",
+        "Serenity"
+    },
+
+    CurrentOption = {"Default"},
+    MultipleOptions = false,
+    Flag = "SettingTheme",
+
+    Callback = function(Options)
+        local ThemeName = Options[1]
+
+        if not ThemeName then
+            return
+        end
+
+        pcall(function()
+            Window.ModifyTheme(ThemeName)
+        end)
+    end
+})
+
+-- =========================================================
+-- REPORT BUG
+-- =========================================================
+
+settingTab:CreateSection("Report Bug")
+
+local BugDescription = ""
+
+local BugInput = settingTab:CreateInput({
+    Name = "Bug Description",
+    CurrentValue = "",
+    PlaceholderText = "Describe the bug...",
+    RemoveTextAfterFocusLost = false,
+
+    Callback = function(Text)
+        BugDescription = Text
+    end
+})
+
+-- =========================================================
+-- GET REQUEST FUNCTION
+-- Supports:
+-- Real       -> request
+-- Delta      -> http_request / request
+-- Other      -> syn.request / http.request
+-- =========================================================
+
+local function GetRequestFunction()
+
+    local RequestFunction = nil
+
+    -- request
+    pcall(function()
+        local Loader = loadstring("return request")
+
+        if Loader then
+            local Success, Result = pcall(Loader)
+
+            if Success and type(Result) == "function" then
+                RequestFunction = Result
+            end
+        end
+    end)
+
+    if type(RequestFunction) == "function" then
+        return RequestFunction
+    end
+
+    -- http_request
+    pcall(function()
+        local Loader = loadstring("return http_request")
+
+        if Loader then
+            local Success, Result = pcall(Loader)
+
+            if Success and type(Result) == "function" then
+                RequestFunction = Result
+            end
+        end
+    end)
+
+    if type(RequestFunction) == "function" then
+        return RequestFunction
+    end
+
+    -- syn.request
+    pcall(function()
+        local Loader = loadstring("return syn and syn.request")
+
+        if Loader then
+            local Success, Result = pcall(Loader)
+
+            if Success and type(Result) == "function" then
+                RequestFunction = Result
+            end
+        end
+    end)
+
+    if type(RequestFunction) == "function" then
+        return RequestFunction
+    end
+
+    -- http.request
+    pcall(function()
+        local Loader = loadstring("return http and http.request")
+
+        if Loader then
+            local Success, Result = pcall(Loader)
+
+            if Success and type(Result) == "function" then
+                RequestFunction = Result
+            end
+        end
+    end)
+
+    return RequestFunction
+end
+
+-- =========================================================
+-- REPORT BUG BUTTON
+-- =========================================================
+
+local ReportBugButton = settingTab:CreateButton({
+    Name = "Report Bug",
+
+    Callback = function()
+
+        -- =================================================
+        -- YOUR NEW WEBHOOK
+        -- =================================================
+
+        local WebhookURL = "https://discord.com/api/webhooks/1557374256956833812/7F4wuVzPf8sqAsASpwHFRpXM3iR1_hbOsxORBw3z8AiqNMCAtMjWrbOZrmcvPe6LZkaa"
+
+        if WebhookURL == ""
+            or WebhookURL == "YOUR_NEW_WEBHOOK_HERE"
+        then
+            Rayfield:Notify({
+                Title = "Report Bug",
+                Content = "Webhook URL is not configured.",
+                Duration = 5
+            })
+
+            return
+        end
+
+        -- =================================================
+        -- CHECK DESCRIPTION
+        -- =================================================
+
+        local CleanText = BugDescription:gsub("%s+", "")
+
+        if CleanText == "" then
+            Rayfield:Notify({
+                Title = "Report Bug",
+                Content = "Please describe the bug first.",
+                Duration = 5
+            })
+
+            return
+        end
+
+        -- Discord embed description limit
+        local Description = BugDescription
+
+        if #Description > 4000 then
+            Description = Description:sub(1, 4000)
+        end
+
+        -- =================================================
+        -- GET REQUEST
+        -- =================================================
+
+        local Request = GetRequestFunction()
+
+        if type(Request) ~= "function" then
+
+            Rayfield:Notify({
+                Title = "Report Bug",
+                Content = "HTTP request is unavailable.",
+                Duration = 5
+            })
+
+            warn("[Fack HUB] No HTTP request function found.")
+
+            return
+        end
+
+        -- =================================================
+        -- SERVICES
+        -- =================================================
+
+        local Players = game:GetService("Players")
+        local HttpService = game:GetService("HttpService")
+
+        local LocalPlayer = Players.LocalPlayer
+
+        -- =================================================
+        -- WEBHOOK DATA
+        -- =================================================
+
+        local Data = {
+            username = "Fack HUB Bug Reporter",
+
+            embeds = {{
+                title = "🐛 Fack HUB Bug Report",
+
+                description = Description,
+
+                fields = {
+                    {
+                        name = "Player",
+                        value = LocalPlayer
+                            and LocalPlayer.Name
+                            or "Unknown",
+                        inline = true
+                    },
+
+                    {
+                        name = "User ID",
+                        value = LocalPlayer
+                            and tostring(LocalPlayer.UserId)
+                            or "Unknown",
+                        inline = true
+                    },
+
+                    {
+                        name = "Place ID",
+                        value = tostring(game.PlaceId),
+                        inline = true
+                    },
+
+                    {
+                        name = "Job ID",
+                        value = tostring(game.JobId),
+                        inline = false
+                    }
+                },
+
+                footer = {
+                    text = "Fack HUB Bug Reporter"
+                },
+
+                timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+            }}
+        }
+
+        -- =================================================
+        -- ENCODE JSON
+        -- =================================================
+
+        local EncodeSuccess, Body = pcall(function()
+            return HttpService:JSONEncode(Data)
+        end)
+
+        if not EncodeSuccess then
+
+            Rayfield:Notify({
+                Title = "Report Bug",
+                Content = "Failed to encode report.",
+                Duration = 5
+            })
+
+            return
+        end
+
+        -- =================================================
+        -- SEND WEBHOOK
+        -- =================================================
+
+        local RequestSuccess, Response = pcall(function()
+            return Request({
+                Url = WebhookURL,
+
+                Method = "POST",
+
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                },
+
+                Body = Body
+            })
+        end)
+
+        -- =================================================
+        -- REQUEST ERROR
+        -- =================================================
+
+        if not RequestSuccess then
+
+            warn(
+                "[Fack HUB] Webhook Request Error:",
+                tostring(Response)
+            )
+
+            Rayfield:Notify({
+                Title = "Report Bug",
+                Content = "Failed to send report.",
+                Duration = 5
+            })
+
+            return
+        end
+
+        -- =================================================
+        -- CHECK RESPONSE
+        -- =================================================
+
+        local StatusCode = nil
+        local ResponseBody = nil
+
+        if type(Response) == "table" then
+            StatusCode = Response.StatusCode
+            ResponseBody = Response.Body
+        end
+
+        print(
+            "[Fack HUB] Webhook Status:",
+            tostring(StatusCode)
+        )
+
+        if ResponseBody then
+            print(
+                "[Fack HUB] Webhook Response:",
+                tostring(ResponseBody)
+            )
+        end
+
+        -- =================================================
+        -- SUCCESS
+        -- =================================================
+
+        if StatusCode == 200 or StatusCode == 204 then
+
+            Rayfield:Notify({
+                Title = "Report Bug",
+                Content = "Bug report sent successfully.",
+                Duration = 4
+            })
+
+            BugDescription = ""
+
+            BugInput:Set("")
+
+        -- =================================================
+        -- FAILED
+        -- =================================================
+
+        else
+
+            warn(
+                "[Fack HUB] Webhook Failed | Status:",
+                tostring(StatusCode),
+                "| Response:",
+                tostring(ResponseBody)
+            )
+
+            Rayfield:Notify({
+                Title = "Report Bug",
+                Content = "Webhook failed: " .. tostring(StatusCode),
+                Duration = 6
+            })
+        end
+    end
+})
+
+Rayfield:LoadConfiguration()
