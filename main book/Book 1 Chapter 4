@@ -532,7 +532,7 @@ local Button = c4Tab:CreateButton({
    Callback = function()
    pcall(function()
         TeleportTo(workspace.TheEye.ThirdsectionTP)
-        task.wait(0.5)
+        task.wait(1)
         TeleportTo(workspace.TheEye.ExitTrigger)
     end)
    end,
