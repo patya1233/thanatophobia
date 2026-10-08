@@ -531,6 +531,8 @@ local Button = c4Tab:CreateButton({
    Name = "Auto Win",
    Callback = function()
    pcall(function()
+        TeleportTo(workspace.TheEye.ThirdsectionTP)
+        task.wait(0.5)
         TeleportTo(workspace.TheEye.ExitTrigger)
     end)
    end,
