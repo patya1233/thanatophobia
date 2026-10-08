@@ -1161,7 +1161,7 @@ local InstantPromptToggle = mTab:CreateToggle({
     end,
 })
 
-if game.GameId == 9091335302 then
+if game.GameId == 3417807086 then
     getgenv().FackWindowm = Window
     loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%201"))()
 end
