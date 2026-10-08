@@ -1172,7 +1172,25 @@ local InstantPromptToggle = mTab:CreateToggle({
 
 if game.GameId == 3417807086 then
     getgenv().FackWindowm = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/load%20all%20book%201-2"))()
+
+    local Success, Error = pcall(function()
+        local Source = game:HttpGet(
+            "https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/load%20all%20book%201-2"
+        )
+
+        local Load = loadstring(Source)
+
+        if not Load then
+            error("Failed to compile load all book 1-2")
+        end
+
+        Load()
+    end)
+
+    if not Success then
+        warn("[Fack HUB] Book Loader Error:")
+        warn(Error)
+    end
 end
 
 -- =========================================================
