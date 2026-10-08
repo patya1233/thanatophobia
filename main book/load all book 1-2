@@ -73,22 +73,22 @@ local v6 = {
 
 if table.find(v2, game.PlaceId) then
     getgenv().FackWindowb1c1 = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter1"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%201"))()
 end
 
 if table.find(v3, game.PlaceId) then
     getgenv().FackWindowb1c2 = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter2"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%202"))()
 end
 
 if table.find(v4, game.PlaceId) then
     getgenv().FackWindowb1c3 = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter3"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%203"))()
 end
 
 if table.find(v5, game.PlaceId) then
     getgenv().FackWindowb1c4 = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/book1%20chapter4"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%2014"))()
 end
 
 if table.find(v6, game.PlaceId) then
