@@ -798,6 +798,15 @@ local Chapter4 = uTab:CreateParagraph({
 ]]
 })
 
+local Chapter4 = uTab:CreateParagraph({
+    Title = "📔 Book 1 | Final",
+    Content = [[
+✅ Added Auto Complete
+👾 Added ESP Monster
+📦 Added ESP Item
+]]
+})
+
 -- ==========================================
 -- BOOK 2
 -- ==========================================
