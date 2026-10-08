@@ -88,7 +88,7 @@ end
 
 if table.find(v5, game.PlaceId) then
     getgenv().FackWindowb1c4 = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%2014"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%204"))()
 end
 
 if table.find(v6, game.PlaceId) then
