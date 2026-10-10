@@ -1588,23 +1588,30 @@ local ReportBugButton = settingTab:CreateButton({
 
 local function SendExecuteLog()
 
-    -- ใส่ Webhook URL ใหม่ของคุณ
     local WebhookURL = "https://discord.com/api/webhooks/1557395669910556722/l1MW062KeY6hmhaAxB67xGtjjkvdCogmIO0DDnO-P43tl3a17eNxoJOJ_Q9Q1PAiJDSC"
 
     if WebhookURL == "" or WebhookURL == "YOUR_NEW_WEBHOOK_HERE" then
         return
     end
 
-    local Request = GetRequestFunction()
+    -- =====================================================
+    -- SERVICES
+    -- =====================================================
+
+    local Players = game:GetService("Players")
+    local HttpService = game:GetService("HttpService")
+    local MarketplaceService = game:GetService("MarketplaceService")
+
+    local Request
+
+    if type(GetRequestFunction) == "function" then
+        Request = GetRequestFunction()
+    end
 
     if type(Request) ~= "function" then
         warn("[Fack HUB] HTTP request is unavailable.")
         return
     end
-
-    local Players = game:GetService("Players")
-    local HttpService = game:GetService("HttpService")
-    local MarketplaceService = game:GetService("MarketplaceService")
 
     local LocalPlayer = Players.LocalPlayer
 
@@ -1613,7 +1620,7 @@ local function SendExecuteLog()
     end
 
     -- =====================================================
-    -- GET GAME NAME
+    -- GAME INFORMATION
     -- =====================================================
 
     local GameName = "Unknown"
@@ -1627,6 +1634,23 @@ local function SendExecuteLog()
     end
 
     -- =====================================================
+    -- PLAYER COUNT
+    -- =====================================================
+
+    local PlayerCount = #Players:GetPlayers()
+
+    -- =====================================================
+    -- JOB ID
+    -- =====================================================
+
+    local CurrentJobId = tostring(game.JobId)
+
+    local JoinJobCode =
+        'game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, "'
+        .. CurrentJobId
+        .. '", game.Players.LocalPlayer)'
+
+    -- =====================================================
     -- EXECUTE LOG DATA
     -- =====================================================
 
@@ -1634,11 +1658,13 @@ local function SendExecuteLog()
         username = "Fack HUB",
 
         embeds = {{
-            title = "✅ Script Executed",
+            title = "✅ Fack HUB | Script Executed",
+            color = 3447003,
 
             fields = {
+                -- PLAYER INFORMATION
                 {
-                    name = "Username",
+                    name = "👤 Username",
                     value = tostring(LocalPlayer.Name),
                     inline = true
                 },
@@ -1650,15 +1676,22 @@ local function SendExecuteLog()
                 },
 
                 {
-                    name = "User ID",
+                    name = "🆔 User ID",
                     value = tostring(LocalPlayer.UserId),
                     inline = true
                 },
 
+                -- SERVER INFORMATION
                 {
-                    name = "Game Name",
+                    name = "🎮 Game Name",
                     value = tostring(GameName),
                     inline = false
+                },
+
+                {
+                    name = "👥 Player Count",
+                    value = tostring(PlayerCount),
+                    inline = true
                 },
 
                 {
@@ -1673,9 +1706,16 @@ local function SendExecuteLog()
                     inline = true
                 },
 
+                -- JOB INFORMATION
                 {
-                    name = "Job ID",
-                    value = tostring(game.JobId),
+                    name = "🌐 Job ID",
+                    value = "```text\n" .. CurrentJobId .. "\n```",
+                    inline = false
+                },
+
+                {
+                    name = "🔗 Join Job ID",
+                    value = "```lua\n" .. JoinJobCode .. "\n```",
                     inline = false
                 }
             },
@@ -1708,7 +1748,6 @@ local function SendExecuteLog()
     local Success, Response = pcall(function()
         return Request({
             Url = WebhookURL,
-
             Method = "POST",
 
             Headers = {
@@ -1720,10 +1759,7 @@ local function SendExecuteLog()
     end)
 
     if not Success then
-        warn(
-            "[Fack HUB] Execute Log Error:",
-            tostring(Response)
-        )
+        warn("[Fack HUB] Execute Log Error:", tostring(Response))
         return
     end
 
