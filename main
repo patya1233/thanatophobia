@@ -1588,6 +1588,7 @@ local ReportBugButton = settingTab:CreateButton({
 
 local function SendExecuteLog()
 
+    -- ใส่ Webhook URL ใหม่ของคุณ
     local WebhookURL = "https://discord.com/api/webhooks/1557395669910556722/l1MW062KeY6hmhaAxB67xGtjjkvdCogmIO0DDnO-P43tl3a17eNxoJOJ_Q9Q1PAiJDSC"
 
     if WebhookURL == "" or WebhookURL == "YOUR_NEW_WEBHOOK_HERE" then
@@ -1603,12 +1604,31 @@ local function SendExecuteLog()
 
     local Players = game:GetService("Players")
     local HttpService = game:GetService("HttpService")
+    local MarketplaceService = game:GetService("MarketplaceService")
 
     local LocalPlayer = Players.LocalPlayer
 
     if not LocalPlayer then
         return
     end
+
+    -- =====================================================
+    -- GET GAME NAME
+    -- =====================================================
+
+    local GameName = "Unknown"
+
+    local GameInfoSuccess, GameInfo = pcall(function()
+        return MarketplaceService:GetProductInfo(game.PlaceId)
+    end)
+
+    if GameInfoSuccess and GameInfo and GameInfo.Name then
+        GameName = GameInfo.Name
+    end
+
+    -- =====================================================
+    -- EXECUTE LOG DATA
+    -- =====================================================
 
     local Data = {
         username = "Fack HUB",
@@ -1633,6 +1653,12 @@ local function SendExecuteLog()
                     name = "User ID",
                     value = tostring(LocalPlayer.UserId),
                     inline = true
+                },
+
+                {
+                    name = "Game Name",
+                    value = tostring(GameName),
+                    inline = false
                 },
 
                 {
@@ -1662,6 +1688,10 @@ local function SendExecuteLog()
         }}
     }
 
+    -- =====================================================
+    -- ENCODE JSON
+    -- =====================================================
+
     local EncodeSuccess, Body = pcall(function()
         return HttpService:JSONEncode(Data)
     end)
@@ -1670,6 +1700,10 @@ local function SendExecuteLog()
         warn("[Fack HUB] Failed to encode execute log.")
         return
     end
+
+    -- =====================================================
+    -- SEND WEBHOOK
+    -- =====================================================
 
     local Success, Response = pcall(function()
         return Request({
@@ -1701,7 +1735,10 @@ local function SendExecuteLog()
     )
 end
 
--- ส่งทันทีเมื่อสคริปต์ถูกรัน
+-- =========================================================
+-- SEND LOG WHEN SCRIPT EXECUTES
+-- =========================================================
+
 task.spawn(function()
     task.wait(1)
     SendExecuteLog()
