@@ -1237,13 +1237,22 @@ local ThemeDropdown = settingTab:CreateDropdown({
     end
 })
 
+
 -- =========================================================
--- REPORT BUG
+-- REPORT BUG | FACK HUB
 -- =========================================================
 
-settingTab:CreateSection("Report Bug")
+settingTab:CreateSection("🐛 Report Bug")
 
 local BugDescription = ""
+local IsSendingBugReport = false
+
+local ScriptVersion = "1.0"
+local BugWebhookURL = "YOUR_NEW_WEBHOOK_HERE"
+
+-- =========================================================
+-- BUG DESCRIPTION INPUT
+-- =========================================================
 
 local BugInput = settingTab:CreateInput({
     Name = "Bug Description",
@@ -1252,87 +1261,74 @@ local BugInput = settingTab:CreateInput({
     RemoveTextAfterFocusLost = false,
 
     Callback = function(Text)
-        BugDescription = Text
+        BugDescription = tostring(Text or "")
     end
 })
 
 -- =========================================================
 -- GET REQUEST FUNCTION
--- Supports:
--- Real       -> request
--- Delta      -> http_request / request
--- Other      -> syn.request / http.request
+-- Supports request, http_request, syn.request, http.request
 -- =========================================================
 
 local function GetRequestFunction()
 
     local RequestFunction = nil
 
-    -- request
-    pcall(function()
-        local Loader = loadstring("return request")
+    local Candidates = {
+        "return request",
+        "return http_request",
+        "return syn and syn.request",
+        "return http and http.request"
+    }
 
-        if Loader then
-            local Success, Result = pcall(Loader)
+    for _, Source in ipairs(Candidates) do
+        pcall(function()
+            local Loader = loadstring(Source)
 
-            if Success and type(Result) == "function" then
-                RequestFunction = Result
+            if Loader then
+                local Success, Result = pcall(Loader)
+
+                if Success and type(Result) == "function" then
+                    RequestFunction = Result
+                end
             end
-        end
-    end)
+        end)
 
-    if type(RequestFunction) == "function" then
-        return RequestFunction
+        if type(RequestFunction) == "function" then
+            return RequestFunction
+        end
     end
 
-    -- http_request
-    pcall(function()
-        local Loader = loadstring("return http_request")
+    return nil
+end
 
-        if Loader then
-            local Success, Result = pcall(Loader)
+-- =========================================================
+-- HELPER FUNCTIONS
+-- =========================================================
 
-            if Success and type(Result) == "function" then
-                RequestFunction = Result
-            end
-        end
+local function NotifyBugReport(Content, Duration)
+    Rayfield:Notify({
+        Title = "Fack HUB | Report Bug",
+        Content = Content,
+        Duration = Duration or 5
+    })
+end
+
+-- Truncate text safely for UTF-8
+local function LimitUTF8(Text, MaxCharacters)
+    local Success, Length = pcall(function()
+        return utf8.len(Text)
     end)
 
-    if type(RequestFunction) == "function" then
-        return RequestFunction
+    if Success and Length and Length > MaxCharacters then
+        local Position = utf8.offset(Text, MaxCharacters + 1)
+
+        if Position then
+            return Text:sub(1, Position - 1)
+        end
     end
 
-    -- syn.request
-    pcall(function()
-        local Loader = loadstring("return syn and syn.request")
-
-        if Loader then
-            local Success, Result = pcall(Loader)
-
-            if Success and type(Result) == "function" then
-                RequestFunction = Result
-            end
-        end
-    end)
-
-    if type(RequestFunction) == "function" then
-        return RequestFunction
-    end
-
-    -- http.request
-    pcall(function()
-        local Loader = loadstring("return http and http.request")
-
-        if Loader then
-            local Success, Result = pcall(Loader)
-
-            if Success and type(Result) == "function" then
-                RequestFunction = Result
-            end
-        end
-    end)
-
-    return RequestFunction
+    return Text
 end
 
 -- =========================================================
@@ -1340,25 +1336,24 @@ end
 -- =========================================================
 
 local ReportBugButton = settingTab:CreateButton({
-    Name = "Report Bug",
+    Name = "🐛 Submit Bug Report",
 
     Callback = function()
 
+        -- Prevent duplicate submissions
+        if IsSendingBugReport then
+            NotifyBugReport("A report is already being sent.", 4)
+            return
+        end
+
         -- =================================================
-        -- YOUR NEW WEBHOOK
+        -- CHECK WEBHOOK
         -- =================================================
 
-        local WebhookURL = "https://discord.com/api/webhooks/1557395558740787331/YerhCWdqJ6VRk6B8heAjv6vVGnh-lN8LJb9RjCkrlrGK2N0Iw_JSeif-KFpl2ddQytNE"
-
-        if WebhookURL == ""
-            or WebhookURL == "YOUR_NEW_WEBHOOK_HERE"
+        if BugWebhookURL == ""
+            or BugWebhookURL == "YOUR_NEW_WEBHOOK_HERE"
         then
-            Rayfield:Notify({
-                Title = "Report Bug",
-                Content = "Webhook URL is not configured.",
-                Duration = 5
-            })
-
+            NotifyBugReport("Webhook URL is not configured.", 5)
             return
         end
 
@@ -1369,38 +1364,21 @@ local ReportBugButton = settingTab:CreateButton({
         local CleanText = BugDescription:gsub("%s+", "")
 
         if CleanText == "" then
-            Rayfield:Notify({
-                Title = "Report Bug",
-                Content = "Please describe the bug first.",
-                Duration = 5
-            })
-
+            NotifyBugReport("Please describe the bug first.", 5)
             return
         end
 
-        -- Discord embed description limit
-        local Description = BugDescription
-
-        if #Description > 4000 then
-            Description = Description:sub(1, 4000)
-        end
+        local Description = LimitUTF8(BugDescription, 4000)
 
         -- =================================================
-        -- GET REQUEST
+        -- GET REQUEST FUNCTION
         -- =================================================
 
         local Request = GetRequestFunction()
 
         if type(Request) ~= "function" then
-
-            Rayfield:Notify({
-                Title = "Report Bug",
-                Content = "HTTP request is unavailable.",
-                Duration = 5
-            })
-
-            warn("[Fack HUB] No HTTP request function found.")
-
+            warn("[Fack HUB] HTTP request is unavailable.")
+            NotifyBugReport("HTTP request is unavailable.", 5)
             return
         end
 
@@ -1410,8 +1388,50 @@ local ReportBugButton = settingTab:CreateButton({
 
         local Players = game:GetService("Players")
         local HttpService = game:GetService("HttpService")
+        local MarketplaceService = game:GetService("MarketplaceService")
 
         local LocalPlayer = Players.LocalPlayer
+
+        if not LocalPlayer then
+            NotifyBugReport("Unable to get local player.", 5)
+            return
+        end
+
+        -- =================================================
+        -- GAME INFORMATION
+        -- =================================================
+
+        local GameName = "Unknown"
+
+        local GameInfoSuccess, GameInfo = pcall(function()
+            return MarketplaceService:GetProductInfo(game.PlaceId)
+        end)
+
+        if GameInfoSuccess and GameInfo and GameInfo.Name then
+            GameName = tostring(GameInfo.Name)
+        end
+
+        -- =================================================
+        -- PLAYER COUNT
+        -- =================================================
+
+        local PlayerCount = #Players:GetPlayers()
+
+        -- =================================================
+        -- JOB ID AND JOIN CODE
+        -- =================================================
+
+        local CurrentJobId = tostring(game.JobId)
+        local JoinJobCode = "Unavailable"
+
+        if CurrentJobId ~= "" then
+            JoinJobCode =
+                'game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, "'
+                .. CurrentJobId
+                .. '", game.Players.LocalPlayer)'
+        else
+            CurrentJobId = "Unavailable"
+        end
 
         -- =================================================
         -- WEBHOOK DATA
@@ -1420,25 +1440,55 @@ local ReportBugButton = settingTab:CreateButton({
         local Data = {
             username = "Fack HUB Bug Reporter",
 
-            embeds = {{
-                title = "🐛 Fack HUB Bug Report",
+            -- Prevent bug descriptions from triggering
+            -- Discord mentions such as @everyone.
+            allowed_mentions = {
+                parse = {}
+            },
 
-                description = Description,
+            embeds = {{
+                title = "🐛 Fack HUB | Bug Report",
+                description = "**Bug Description**\n"
+                    .. Description,
+
+                color = 15158332,
 
                 fields = {
+                    -- PLAYER INFORMATION
                     {
-                        name = "Player",
-                        value = LocalPlayer
-                            and LocalPlayer.Name
-                            or "Unknown",
+                        name = "👤 Username",
+                        value = tostring(LocalPlayer.Name),
                         inline = true
                     },
 
                     {
-                        name = "User ID",
-                        value = LocalPlayer
-                            and tostring(LocalPlayer.UserId)
-                            or "Unknown",
+                        name = "Display Name",
+                        value = tostring(LocalPlayer.DisplayName),
+                        inline = true
+                    },
+
+                    {
+                        name = "🆔 User ID",
+                        value = tostring(LocalPlayer.UserId),
+                        inline = true
+                    },
+
+                    -- GAME INFORMATION
+                    {
+                        name = "🎮 Game Name",
+                        value = GameName,
+                        inline = false
+                    },
+
+                    {
+                        name = "👥 Player Count",
+                        value = tostring(PlayerCount),
+                        inline = true
+                    },
+
+                    {
+                        name = "📦 Script Version",
+                        value = ScriptVersion,
                         inline = true
                     },
 
@@ -1449,14 +1499,31 @@ local ReportBugButton = settingTab:CreateButton({
                     },
 
                     {
-                        name = "Job ID",
-                        value = tostring(game.JobId),
+                        name = "Game ID",
+                        value = tostring(game.GameId),
+                        inline = true
+                    },
+
+                    -- SERVER INFORMATION
+                    {
+                        name = "🌐 Job ID",
+                        value = "```text\n"
+                            .. CurrentJobId
+                            .. "\n```",
+                        inline = false
+                    },
+
+                    {
+                        name = "🔗 Join Job ID",
+                        value = "```lua\n"
+                            .. JoinJobCode
+                            .. "\n```",
                         inline = false
                     }
                 },
 
                 footer = {
-                    text = "Fack HUB Bug Reporter"
+                    text = "Fack HUB | Bug Reporter"
                 },
 
                 timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
@@ -1472,13 +1539,8 @@ local ReportBugButton = settingTab:CreateButton({
         end)
 
         if not EncodeSuccess then
-
-            Rayfield:Notify({
-                Title = "Report Bug",
-                Content = "Failed to encode report.",
-                Duration = 5
-            })
-
+            warn("[Fack HUB] Failed to encode bug report.")
+            NotifyBugReport("Failed to encode report.", 5)
             return
         end
 
@@ -1486,9 +1548,13 @@ local ReportBugButton = settingTab:CreateButton({
         -- SEND WEBHOOK
         -- =================================================
 
+        IsSendingBugReport = true
+
+        NotifyBugReport("Sending bug report...", 3)
+
         local RequestSuccess, Response = pcall(function()
             return Request({
-                Url = WebhookURL,
+                Url = BugWebhookURL,
 
                 Method = "POST",
 
@@ -1500,23 +1566,19 @@ local ReportBugButton = settingTab:CreateButton({
             })
         end)
 
+        IsSendingBugReport = false
+
         -- =================================================
         -- REQUEST ERROR
         -- =================================================
 
         if not RequestSuccess then
-
             warn(
                 "[Fack HUB] Webhook Request Error:",
                 tostring(Response)
             )
 
-            Rayfield:Notify({
-                Title = "Report Bug",
-                Content = "Failed to send report.",
-                Duration = 5
-            })
-
+            NotifyBugReport("Failed to send report. Please try again.", 5)
             return
         end
 
@@ -1524,8 +1586,8 @@ local ReportBugButton = settingTab:CreateButton({
         -- CHECK RESPONSE
         -- =================================================
 
-        local StatusCode = nil
-        local ResponseBody = nil
+        local StatusCode
+        local ResponseBody
 
         if type(Response) == "table" then
             StatusCode = Response.StatusCode
@@ -1533,31 +1595,22 @@ local ReportBugButton = settingTab:CreateButton({
         end
 
         print(
-            "[Fack HUB] Webhook Status:",
+            "[Fack HUB] Bug Report Status:",
             tostring(StatusCode)
         )
-
-        if ResponseBody then
-            print(
-                "[Fack HUB] Webhook Response:",
-                tostring(ResponseBody)
-            )
-        end
 
         -- =================================================
         -- SUCCESS
         -- =================================================
 
-        if StatusCode == 200 or StatusCode == 204 then
-
-            Rayfield:Notify({
-                Title = "Report Bug",
-                Content = "Bug report sent successfully.",
-                Duration = 4
-            })
+        if StatusCode == 200
+            or StatusCode == 201
+            or StatusCode == 202
+            or StatusCode == 204
+        then
+            NotifyBugReport("Bug report sent successfully!", 4)
 
             BugDescription = ""
-
             BugInput:Set("")
 
         -- =================================================
@@ -1565,7 +1618,6 @@ local ReportBugButton = settingTab:CreateButton({
         -- =================================================
 
         else
-
             warn(
                 "[Fack HUB] Webhook Failed | Status:",
                 tostring(StatusCode),
@@ -1573,14 +1625,14 @@ local ReportBugButton = settingTab:CreateButton({
                 tostring(ResponseBody)
             )
 
-            Rayfield:Notify({
-                Title = "Report Bug",
-                Content = "Webhook failed: " .. tostring(StatusCode),
-                Duration = 6
-            })
+            NotifyBugReport(
+                "Webhook failed. Status: " .. tostring(StatusCode),
+                6
+            )
         end
     end
 })
+
 
 -- =========================================================
 -- SCRIPT EXECUTE LOG
