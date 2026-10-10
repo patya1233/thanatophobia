@@ -1248,7 +1248,7 @@ local BugDescription = ""
 local IsSendingBugReport = false
 
 local ScriptVersion = "1.0"
-local BugWebhookURL = "YOUR_NEW_WEBHOOK_HERE"
+local BugWebhookURL = "https://discord.com/api/webhooks/1557395558740787331/YerhCWdqJ6VRk6B8heAjv6vVGnh-lN8LJb9RjCkrlrGK2N0Iw_JSeif-KFpl2ddQytNE"
 
 -- =========================================================
 -- BUG DESCRIPTION INPUT
