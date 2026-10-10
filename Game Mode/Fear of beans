@@ -1,0 +1,1037 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+player.CharacterAdded:Connect(function(char)
+    character = char
+    hrp = char:WaitForChild("HumanoidRootPart")
+end)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local function RemoveESP(object)
+    if not object then return end
+
+    -- ลบ Object ที่ชื่อมีคำว่า "Fackhub"
+    for _, obj in ipairs(object:GetDescendants()) do
+        if string.find(obj.Name, "Fackhub", 1, true) then
+            obj:Destroy()
+        end
+    end
+
+    -- เช็กตัว object เองด้วย
+    if string.find(object.Name, "Fackhub", 1, true) then
+        object:Destroy()
+    end
+end
+
+local function CreateHighlight(object, fillColor, outlineColor, fillTrans, outlineTrans)
+    if not object then return end
+    if object:FindFirstChild("FackhubHighlight") then return end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "FackhubHighlight"
+    highlight.FillColor = fillColor or Color3.fromRGB(255, 255, 255)
+    highlight.OutlineColor = outlineColor or Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = fillTrans or 0.5
+    highlight.OutlineTransparency = outlineTrans or 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = object
+
+    return highlight
+end
+
+
+-- 2. ฟังก์ชันสร้าง BillboardGui / ESP Text
+local function CreateESPText(object, text, color, offset, size)
+    if not object then return end
+    if object:FindFirstChild("FackhubText") then return end
+
+    color = color or Color3.fromRGB(255, 255, 255)
+    offset = offset or Vector3.new(0, 3, 0)
+    size = size or UDim2.new(0, 150, 0, 40)
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "FackhubText"
+    billboard.Size = size
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = offset
+    billboard.Parent = object
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = text or object.Name
+    textLabel.TextColor3 = color
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Parent = billboard
+
+    return billboard
+end
+
+
+local function CreateESPBox(object, color, size, transparency)
+    if not object then
+        return nil
+    end
+
+    color = color or Color3.fromRGB(0, 255, 0)
+    transparency = transparency or 0.5
+
+    -- Part / MeshPart / UnionOperation ฯลฯ
+    if object:IsA("BasePart") then
+        if object:FindFirstChild("FackhubBox") then
+            return nil
+        end
+
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "FackhubBox"
+        box.Adornee = object
+        box.AlwaysOnTop = true
+        box.ZIndex = 10
+        box.Size = size or object.Size
+        box.Color3 = color
+        box.Transparency = transparency
+        box.Parent = object
+
+        return box
+    end
+
+    -- Model
+    if object:IsA("Model") then
+        local part = object:FindFirstChild("HumanoidRootPart")
+            or object.PrimaryPart
+            or object:FindFirstChildWhichIsA("BasePart", true)
+
+        if not part then
+            warn("ไม่พบ BasePart ใน Model:", object:GetFullName())
+            return nil
+        end
+
+        if part:FindFirstChild("FackhubBox") then
+            return nil
+        end
+
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "FackhubBox"
+        box.Adornee = part
+        box.AlwaysOnTop = true
+        box.ZIndex = 10
+        box.Size = size or part.Size
+        box.Color3 = color
+        box.Transparency = transparency
+        box.Parent = part
+
+        return box
+    end
+
+    return nil
+end
+
+local function InteractPrompt(object, delayTime)
+    if not object then
+        return
+    end
+
+    if delayTime and delayTime > 0 then
+        task.wait(delayTime)
+    end
+
+    local prompts = {}
+
+    -- ถ้า object เองเป็น ProximityPrompt
+    if object:IsA("ProximityPrompt") then
+        table.insert(prompts, object)
+    end
+
+    -- หา ProximityPrompt ทุกตัวที่อยู่ข้างใน object
+    for _, v in ipairs(object:GetDescendants()) do
+        if v:IsA("ProximityPrompt") then
+            table.insert(prompts, v)
+        end
+    end
+
+    -- กดทุก Prompt ที่เจอ
+    for _, prompt in ipairs(prompts) do
+        pcall(function()
+            prompt.Enabled = true
+            fireproximityprompt(prompt)
+        end)
+    end
+end
+
+local function TeleportTo(targetPosition)
+    if not hrp or not targetPosition then
+        return
+    end
+
+    if typeof(targetPosition) == "CFrame" then
+        hrp.CFrame = targetPosition
+
+    elseif typeof(targetPosition) == "Vector3" then
+        hrp.CFrame = CFrame.new(targetPosition)
+
+    elseif typeof(targetPosition) == "Instance" then
+
+        if targetPosition:IsA("BasePart") then
+            hrp.CFrame = targetPosition.CFrame
+
+        elseif targetPosition:IsA("Model") then
+            local root = targetPosition:FindFirstChild("HumanoidRootPart")
+                or targetPosition.PrimaryPart
+                or targetPosition:FindFirstChildWhichIsA("BasePart", true)
+
+            if root then
+                hrp.CFrame = root.CFrame
+            end
+        end
+    end
+end
+
+local function TeleportToNearestSafeLight(folder)
+    local nearest = nil
+    local shortest = math.huge
+
+    for _, v in ipairs(folder:GetChildren()) do
+        local targetPosition
+
+        if v:IsA("BasePart") then
+            targetPosition = v.Position
+
+        elseif v:IsA("Model") then
+            targetPosition = v:GetPivot().Position
+        end
+
+        if targetPosition then
+            local distance = (hrp.Position - targetPosition).Magnitude
+
+            if distance < shortest then
+                shortest = distance
+                nearest = v
+            end
+        end
+    end
+
+    if nearest then
+        TeleportTo(nearest)
+    end
+end
+
+local savedCFrame = nil
+
+local function SaveCFrame()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    savedCFrame = hrp.CFrame
+end
+
+local function ReturnCFrame()
+    if not savedCFrame then
+        return
+    end
+
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    hrp.CFrame = savedCFrame
+end
+
+local function GetMonsterRoot(monster)
+    if monster:IsA("Model") then
+        return monster:FindFirstChild("HumanoidRootPart")
+            or monster.PrimaryPart
+            or monster:FindFirstChildWhichIsA("BasePart", true)
+    elseif monster:IsA("BasePart") then
+        return monster
+    end
+
+    return nil
+end
+
+
+local function IsMonsterNear(monsterPath, target, maxDistance)
+    if not monsterPath or not target then
+        return false
+    end
+
+    local targetPosition
+
+    if target:IsA("BasePart") then
+        targetPosition = target.Position
+    elseif typeof(target) == "Vector3" then
+        targetPosition = target
+    else
+        return false
+    end
+
+    for _, monster in ipairs(monsterPath:GetChildren()) do
+        local root = GetMonsterRoot(monster)
+
+        if root then
+            local distance = (root.Position - targetPosition).Magnitude
+
+            if distance <= maxDistance then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+local FloatConnection = nil
+
+local function StartFloat()
+    if FloatConnection then
+        FloatConnection:Disconnect()
+        FloatConnection = nil
+    end
+
+    FloatConnection = RunService.Heartbeat:Connect(function()
+        if hrp and hrp.Parent then
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+        end
+    end)
+end
+
+local function StopFloat()
+    if FloatConnection then
+        FloatConnection:Disconnect()
+        FloatConnection = nil
+    end
+end
+
+local function TweenTo(target, speed)
+    pcall(function()
+        local character = game.Players.LocalPlayer.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+
+        if not hrp or not target then
+            return
+        end
+
+        local targetCFrame
+
+        if target:IsA("BasePart") then
+            targetCFrame = target.CFrame
+        elseif target:IsA("Model") then
+            targetCFrame = target:GetPivot()
+        elseif typeof(target) == "CFrame" then
+            targetCFrame = target
+        elseif typeof(target) == "Vector3" then
+            targetCFrame = CFrame.new(target)
+        else
+            return
+        end
+
+        speed = speed or 100
+
+        local distance = (hrp.Position - targetCFrame.Position).Magnitude
+        local duration = math.max(distance / speed, 0.1)
+
+        local tween = TweenService:Create(
+            hrp,
+            TweenInfo.new(duration, Enum.EasingStyle.Linear),
+            {CFrame = targetCFrame}
+        )
+
+        tween:Play()
+        tween.Completed:Wait()
+    end)
+end
+
+local function SmoothTweenTo(targetCFrame, speed)
+    local character = player.Character
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+
+    if not hrp or typeof(targetCFrame) ~= "CFrame" then
+        return
+    end
+
+    local distance = (hrp.Position - targetCFrame.Position).Magnitude
+    local duration = math.max(distance / (speed or 20), 0.05)
+
+    local tween = TweenService:Create(
+        hrp,
+        TweenInfo.new(duration, Enum.EasingStyle.Linear),
+        {CFrame = targetCFrame}
+    )
+
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+-- ==========================================
+-- Noclip Function
+-- ==========================================
+local FackNoclipEnabled = false
+local FackNoclipConnection = nil
+local FackNoclipOriginal = {}
+
+-- เปิด Noclip
+local function StartNoclip()
+    if FackNoclipEnabled then
+        return
+    end
+
+    FackNoclipEnabled = true
+
+    FackNoclipConnection = RunService.Stepped:Connect(function()
+        pcall(function()
+            if not character then
+                return
+            end
+
+            for _, part in ipairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+
+                    if FackNoclipOriginal[part] == nil then
+                        FackNoclipOriginal[part] = part.CanCollide
+                    end
+
+                    part.CanCollide = false
+                end
+            end
+        end)
+    end)
+end
+
+-- ปิด Noclip
+local function StopNoclip()
+    FackNoclipEnabled = false
+
+    if FackNoclipConnection then
+        FackNoclipConnection:Disconnect()
+        FackNoclipConnection = nil
+    end
+
+    -- คืนค่า CanCollide เดิม
+    for part, originalValue in pairs(FackNoclipOriginal) do
+        pcall(function()
+            if part.Parent then
+                part.CanCollide = originalValue
+            end
+        end)
+
+        FackNoclipOriginal[part] = nil
+    end
+end
+
+local beTab = Window:CreateTab("BeanCan", "align-justify")
+
+local Section = beTab:CreateSection("Part 1")
+
+local Button = beTab:CreateButton({
+    Name = "Auto Collect Bean Cans",
+
+    Callback = function()
+
+        SaveCFrame()
+
+        local MonsterPath = workspace:FindFirstChild("Monster1", true)
+        local MonsterDistance = 30
+
+        pcall(function()
+            TeleportTo(workspace.Dialogue.Objective1)
+            task.wait(0.5)
+        end)
+
+        StartFloat()
+
+        for _, v in ipairs(workspace.Puzzle1:GetChildren()) do
+
+            if v:IsA("MeshPart") then
+
+                -- มอนอยู่ใกล้ → กลับจุดเดิมและรอ
+                while MonsterPath
+                    and IsMonsterNear(
+                        MonsterPath,
+                        v,
+                        MonsterDistance
+                    ) do
+
+                    ReturnCFrame()
+                    task.wait(0.2)
+                end
+
+                -- มอนออกแล้ว → วาปไปเก็บ
+                TeleportTo(v)
+                task.wait(0.3)
+
+                -- เช็กมอนอีกครั้งหลังวาป
+                if MonsterPath
+                    and IsMonsterNear(
+                        MonsterPath,
+                        v,
+                        MonsterDistance
+                    ) then
+
+                    ReturnCFrame()
+
+                    repeat
+                        task.wait(0.2)
+                    until not IsMonsterNear(
+                        MonsterPath,
+                        v,
+                        MonsterDistance
+                    )
+
+                    TeleportTo(v)
+                    task.wait(0.3)
+                end
+
+                local pp = v
+
+                local prompt =
+                    pp:FindFirstChildWhichIsA(
+                        "ProximityPrompt",
+                        true
+                    )
+                    or (
+                        pp.Parent
+                        and pp.Parent:FindFirstChildWhichIsA(
+                            "ProximityPrompt",
+                            true
+                        )
+                    )
+
+                if prompt then
+                    InteractPrompt(prompt, 0)
+                end
+            end
+        end
+
+        StartNoclip()
+        TeleportTo(workspace.Puzzle1.ExitGate)
+        task.wait(0.2)
+
+        TweenTo(workspace.Cutscene1Trigger, 100)
+        StopNoclip()
+        StopFloat()
+    end,
+})
+
+local Section = beTab:CreateSection("ESP item")
+
+local Toggle = beTab:CreateToggle({
+    Name = "esp BeanCan",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.Puzzle1:GetChildren()) do
+                if v:IsA("MeshPart") then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, v.Name, Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.Puzzle1:GetChildren()) do
+                if v:IsA("MeshPart") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Section = beTab:CreateSection("ESP Monster")
+
+local Toggle = beTab:CreateToggle({
+    Name = "esp Monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monster1:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Kati" then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,v.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monster1:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Kati" then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local beTab = Window:CreateTab("Orb", "align-justify")
+
+local Section = beTab:CreateSection("Part 2")
+
+local Button = beTab:CreateButton({
+    Name = "Auto Collect Orb",
+
+    Callback = function()
+
+        SaveCFrame()
+
+        local Puzzle = workspace.SecondSection.Puzzle2
+        local OrbsCollected = Puzzle:WaitForChild("OrbsCollected")
+        local OrbsCollected2 = Puzzle:WaitForChild("OrbsCollected2")
+
+        local MonsterPath = workspace:FindFirstChild("Monster1", true)
+        local MonsterDistance = 30
+
+        pcall(function()
+            TeleportTo(workspace.Dialogue.Objective2)
+            task.wait(0.5)
+            ReturnCFrame()
+            task.wait(3)
+        end)
+
+        StartFloat()
+
+        -- =========================================
+        -- FUNCTION: COLLECT ORB
+        -- =========================================
+
+        local function CollectOrbRound(OrbFolder, Counter)
+
+            while Counter.Value < 12 do
+
+                for _, v in ipairs(OrbFolder:GetChildren()) do
+
+                    if Counter.Value >= 12 then
+                        break
+                    end
+
+                    if v.Name == "Orb" then
+
+                        -- รอจนกว่า Monster จะออกห่าง
+                        while Counter.Value < 12
+                            and MonsterPath
+                            and v.Parent
+                            and IsMonsterNear(
+                                MonsterPath,
+                                v,
+                                MonsterDistance
+                            ) do
+
+                            ReturnCFrame()
+                            task.wait(0.2)
+                        end
+
+                        if Counter.Value >= 12 then
+                            break
+                        end
+
+                        if v.Parent then
+
+                            TeleportTo(v)
+                            task.wait(0.3)
+
+                            -- ตรวจสอบ Monster หลังวาป
+                            if Counter.Value < 12
+                                and MonsterPath
+                                and IsMonsterNear(
+                                    MonsterPath,
+                                    v,
+                                    MonsterDistance
+                                ) then
+
+                                ReturnCFrame()
+
+                                repeat
+                                    task.wait(0.2)
+                                until Counter.Value >= 12
+                                    or not IsMonsterNear(
+                                        MonsterPath,
+                                        v,
+                                        MonsterDistance
+                                    )
+
+                                if Counter.Value < 12
+                                    and v.Parent then
+
+                                    TeleportTo(v)
+                                    task.wait(0.3)
+                                end
+                            end
+
+                            -- ค้นหา ProximityPrompt
+                            if Counter.Value < 12 and v.Parent then
+
+                                local prompt =
+                                    v:FindFirstChildWhichIsA(
+                                        "ProximityPrompt",
+                                        true
+                                    )
+                                    or (
+                                        v.Parent
+                                        and v.Parent:FindFirstChildWhichIsA(
+                                            "ProximityPrompt",
+                                            true
+                                        )
+                                    )
+
+                                if prompt then
+                                    InteractPrompt(prompt, 0)
+                                    task.wait(0.2)
+                                end
+                            end
+                        end
+                    end
+                end
+
+                if Counter.Value < 12 then
+                    task.wait(0.2)
+                end
+            end
+        end
+
+        -- =========================================
+        -- ROUND 1: PUZZLE2
+        -- =========================================
+
+        while OrbsCollected.Value < 12 do
+            pcall(function()
+                CollectOrbRound(Puzzle, OrbsCollected)
+            end)
+
+            task.wait(0.2)
+        end
+
+        -- รอบแรกครบ 12 กลับจุดเดิม
+        ReturnCFrame()
+        task.wait(0.5)
+
+        -- =========================================
+        -- WAIT FOR SECONDROUND
+        -- =========================================
+
+        local SecondRound = Puzzle:FindFirstChild("SecondRound")
+
+        while not SecondRound do
+            task.wait(0.2)
+            SecondRound = Puzzle:FindFirstChild("SecondRound")
+        end
+
+        -- =========================================
+        -- ROUND 2: SECONDROUND
+        -- =========================================
+
+        while OrbsCollected2.Value < 12 do
+            pcall(function()
+                CollectOrbRound(SecondRound, OrbsCollected2)
+            end)
+
+            task.wait(0.2)
+        end
+
+        -- =========================================
+        -- COMPLETED: CONTINUE
+        -- =========================================
+
+        TeleportTo(workspace.Cutscene2Trigger)
+        StopFloat()
+
+    end,
+})
+
+local Section = beTab:CreateSection("ESP item")
+
+local Toggle = beTab:CreateToggle({
+    Name = "esp Orb",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.SecondSection.Puzzle2:GetChildren()) do
+                if v.Name == "Orb" then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, v.Name, Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.Puzzle1:GetChildren()) do
+                if v.Name == "Orb" then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Section = beTab:CreateSection("ESP Monster")
+
+local Toggle = beTab:CreateToggle({
+    Name = "esp Monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monster1:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Monster2" then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,v.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monster1:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Monster2" then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local beTab = Window:CreateTab("BossFight", "align-justify")
+
+local Section = beTab:CreateSection("Part 3")
+
+local StunOrbEnabled = false
+local StunOrbLoopId = 0
+local StunOrbFloor = nil
+
+local Toggle = beTab:CreateToggle({
+    Name = "Auto BossFight",
+    CurrentValue = false,
+    Flag = "AutoStunOrbToggle",
+
+    Callback = function(Value)
+
+        StunOrbEnabled = Value
+        StunOrbLoopId += 1
+
+        local LoopId = StunOrbLoopId
+
+        -- ==========================================
+        -- STOP
+        -- ==========================================
+        if not Value then
+            StopNoclip()
+            StopFloat()
+
+            pcall(function()
+                if StunOrbFloor then
+                    StunOrbFloor:Destroy()
+                    StunOrbFloor = nil
+                end
+
+                local oldFloor = workspace:FindFirstChild("Fack hub")
+                if oldFloor then
+                    oldFloor:Destroy()
+                end
+
+                ReturnCFrame()
+            end)
+
+            return
+        end
+
+        -- ==========================================
+        -- START
+        -- ==========================================
+        SaveCFrame()
+
+        StartFloat()
+        StartNoclip()
+
+        task.spawn(function()
+
+            local Success, ErrorMessage = pcall(function()
+
+                -- ==========================================
+                -- SEARCH POSITION
+                -- ห่าง 2000 studs สูงขึ้น 100 studs
+                -- ==========================================
+                character = player.Character
+                    or player.CharacterAdded:Wait()
+
+                hrp = character:WaitForChild("HumanoidRootPart")
+
+                local SearchCFrame =
+                    hrp.CFrame * CFrame.new(0, 100, 2000)
+
+                -- ==========================================
+                -- CREATE FLOOR
+                -- ==========================================
+                local oldFloor = workspace:FindFirstChild("Fack hub")
+
+                if oldFloor then
+                    oldFloor:Destroy()
+                end
+
+                StunOrbFloor = Instance.new("Part")
+                StunOrbFloor.Name = "Fack hub"
+                StunOrbFloor.Size = Vector3.new(10, 1, 10)
+                StunOrbFloor.Anchored = true
+                StunOrbFloor.CanCollide = true
+                StunOrbFloor.Transparency = 0.2
+                StunOrbFloor.Material = Enum.Material.SmoothPlastic
+
+                StunOrbFloor.CFrame = CFrame.new(
+                    SearchCFrame.Position.X,
+                    SearchCFrame.Position.Y - 3.5,
+                    SearchCFrame.Position.Z
+                )
+
+                StunOrbFloor.Parent = workspace
+
+                if not StunOrbEnabled or LoopId ~= StunOrbLoopId then
+                    return
+                end
+
+                -- วาปไปจุดรอ
+                TeleportTo(SearchCFrame)
+                task.wait(0.2)
+
+                -- ==========================================
+                -- GET STUNORB
+                -- ==========================================
+                local function GetStunOrb()
+                    local folder = workspace:FindFirstChild("Folder")
+
+                    if not folder then
+                        return nil
+                    end
+
+                    return folder:FindFirstChild("StunOrb")
+                end
+
+                -- ==========================================
+                -- GET ORB PART
+                -- ==========================================
+                local function GetOrbPart(orb)
+                    if orb:IsA("BasePart") then
+                        return orb
+                    elseif orb:IsA("Model") then
+                        return orb.PrimaryPart
+                            or orb:FindFirstChildWhichIsA(
+                                "BasePart",
+                                true
+                            )
+                    end
+
+                    return nil
+                end
+
+                -- ==========================================
+                -- MAIN LOOP
+                -- ==========================================
+                while StunOrbEnabled and LoopId == StunOrbLoopId do
+
+                    -- รอจนกว่า StunOrb จะปรากฏ
+                    local orb = GetStunOrb()
+
+                    if not orb then
+                        task.wait(0.1)
+                        continue
+                    end
+
+                    -- ==========================================
+                    -- INTERACT WITH STUNORB
+                    -- ==========================================
+                    while StunOrbEnabled
+                        and LoopId == StunOrbLoopId
+                        and orb.Parent do
+
+                        local part = GetOrbPart(orb)
+
+                        if not part then
+                            task.wait(0.1)
+                            continue
+                        end
+
+                        -- วาปไปเหนือ StunOrb 18 studs
+                        TeleportTo(
+                            part.Position + Vector3.new(0, 18, 0)
+                        )
+
+                        task.wait(0.1)
+
+                        if not StunOrbEnabled
+                            or LoopId ~= StunOrbLoopId then
+                            break
+                        end
+
+                        if not orb.Parent then
+                            break
+                        end
+
+                        -- หา ProximityPrompt
+                        local prompt =
+                            orb:FindFirstChildWhichIsA(
+                                "ProximityPrompt",
+                                true
+                            )
+
+                        if not prompt and orb.Parent then
+                            prompt =
+                                orb.Parent:FindFirstChildWhichIsA(
+                                    "ProximityPrompt",
+                                    true
+                                )
+                        end
+
+                        -- กดซ้ำจนกว่า StunOrb จะหาย
+                        if prompt then
+                            InteractPrompt(prompt, 0)
+                        end
+
+                        task.wait(0.1)
+                    end
+
+                    -- ==========================================
+                    -- STUNORB DISAPPEARED
+                    -- วาปกลับจุดรอเดิม
+                    -- ==========================================
+                    if StunOrbEnabled and LoopId == StunOrbLoopId then
+                        TeleportTo(SearchCFrame)
+                        task.wait(0.1)
+                    end
+                end
+            end)
+
+            -- ==========================================
+            -- ERROR HANDLING
+            -- ==========================================
+            if not Success then
+                warn("[Auto BossFight] Error: " .. tostring(ErrorMessage))
+            end
+
+            if LoopId == StunOrbLoopId then
+                StunOrbEnabled = false
+
+                StopNoclip()
+                StopFloat()
+
+                pcall(function()
+                    if StunOrbFloor then
+                        StunOrbFloor:Destroy()
+                        StunOrbFloor = nil
+                    end
+
+                    local oldFloor = workspace:FindFirstChild("Fack hub")
+                    if oldFloor then
+                        oldFloor:Destroy()
+                    end
+
+                    ReturnCFrame()
+                end)
+            end
+        end)
+    end,
+})
