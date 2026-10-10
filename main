@@ -1433,102 +1433,93 @@ local ReportBugButton = settingTab:CreateButton({
             CurrentJobId = "Unavailable"
         end
 
-        -- =================================================
-        -- WEBHOOK DATA
-        -- =================================================
+        -- =========================================================
+-- FACK HUB | BEAUTIFUL BUG REPORT EMBED
+-- =========================================================
 
-        local Data = {
-            username = "Fack HUB Bug Reporter",
+local Data = {
+    username = "Fack HUB | Bug Reporter",
 
-            -- Prevent bug descriptions from triggering
-            -- Discord mentions such as @everyone.
-            allowed_mentions = {
-                parse = {}
+    allowed_mentions = {
+        parse = {}
+    },
+
+    embeds = {{
+        -- HEADER
+        author = {
+            name = "FACK HUB  •  BUG REPORT SYSTEM"
+        },
+
+        title = "🐛  New Bug Report",
+
+        description =
+            "A new bug report has been submitted.\n\n"
+            .. "📝 **Bug Description**\n"
+            .. "```text\n"
+            .. Description
+            .. "\n```",
+
+        color = 0xFF4757,
+
+        -- INFORMATION
+        fields = {
+            {
+                name = "👤  PLAYER INFORMATION",
+                value =
+                    "**Username**\n"
+                    .. "`" .. tostring(LocalPlayer.Name) .. "`\n\n"
+                    .. "**Display Name**\n"
+                    .. tostring(LocalPlayer.DisplayName) .. "\n\n"
+                    .. "**User ID**\n"
+                    .. "`" .. tostring(LocalPlayer.UserId) .. "`",
+                inline = true
             },
 
-            embeds = {{
-                title = "🐛 Fack HUB | Bug Report",
-                description = "**Bug Description**\n"
-                    .. Description,
+            {
+                name = "🎮  GAME INFORMATION",
+                value =
+                    "**Game Name**\n"
+                    .. tostring(GameName) .. "\n\n"
+                    .. "**Player Count**\n"
+                    .. "👥 `" .. tostring(PlayerCount) .. "`\n\n"
+                    .. "**Script Version**\n"
+                    .. "`" .. tostring(ScriptVersion) .. "`",
+                inline = true
+            },
 
-                color = 15158332,
+            {
+                name = "🗺️  GAME IDENTIFIERS",
+                value =
+                    "**Place ID**\n"
+                    .. "`" .. tostring(game.PlaceId) .. "`\n\n"
+                    .. "**Game ID**\n"
+                    .. "`" .. tostring(game.GameId) .. "`",
+                inline = false
+            },
 
-                fields = {
-                    -- PLAYER INFORMATION
-                    {
-                        name = "👤 Username",
-                        value = tostring(LocalPlayer.Name),
-                        inline = true
-                    },
+            {
+                name = "🌐  SERVER INFORMATION",
+                value =
+                    "**Job ID**\n"
+                    .. "```text\n"
+                    .. tostring(CurrentJobId)
+                    .. "\n```\n"
+                    .. "**Join Job ID Code**\n"
+                    .. "```lua\n"
+                    .. JoinJobCode
+                    .. "\n```",
+                inline = false
+            }
+        },
 
-                    {
-                        name = "Display Name",
-                        value = tostring(LocalPlayer.DisplayName),
-                        inline = true
-                    },
+        -- FOOTER
+        footer = {
+            text = "Fack HUB  •  Bug Reporter"
+        },
 
-                    {
-                        name = "🆔 User ID",
-                        value = tostring(LocalPlayer.UserId),
-                        inline = true
-                    },
-
-                    -- GAME INFORMATION
-                    {
-                        name = "🎮 Game Name",
-                        value = GameName,
-                        inline = false
-                    },
-
-                    {
-                        name = "👥 Player Count",
-                        value = tostring(PlayerCount),
-                        inline = true
-                    },
-
-                    {
-                        name = "📦 Script Version",
-                        value = ScriptVersion,
-                        inline = true
-                    },
-
-                    {
-                        name = "Place ID",
-                        value = tostring(game.PlaceId),
-                        inline = true
-                    },
-
-                    {
-                        name = "Game ID",
-                        value = tostring(game.GameId),
-                        inline = true
-                    },
-
-                    -- SERVER INFORMATION
-                    {
-                        name = "🌐 Job ID",
-                        value = "```text\n"
-                            .. CurrentJobId
-                            .. "\n```",
-                        inline = false
-                    },
-
-                    {
-                        name = "🔗 Join Job ID",
-                        value = "```lua\n"
-                            .. JoinJobCode
-                            .. "\n```",
-                        inline = false
-                    }
-                },
-
-                footer = {
-                    text = "Fack HUB | Bug Reporter"
-                },
-
-                timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
-            }}
-        }
+        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+    }}
+}
 
         -- =================================================
         -- ENCODE JSON
