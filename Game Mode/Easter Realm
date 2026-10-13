@@ -1,0 +1,1478 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+local Players = game:GetService("Players")
+local humanoid = character:WaitForChild("Humanoid")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local VirtualUser = game:GetService("VirtualUser")
+
+player.CharacterAdded:Connect(function(char)
+    character = char
+    hrp = char:WaitForChild("HumanoidRootPart")
+    humanoid = char:WaitForChild("Humanoid")
+end)
+
+local function RemoveESP(object)
+    if not object then return end
+
+    -- ลบ Object ที่ชื่อมีคำว่า "Fackhub"
+    for _, obj in ipairs(object:GetDescendants()) do
+        if string.find(obj.Name, "Fackhub", 1, true) then
+            obj:Destroy()
+        end
+    end
+
+    -- เช็กตัว object เองด้วย
+    if string.find(object.Name, "Fackhub", 1, true) then
+        object:Destroy()
+    end
+end
+
+local function CreateHighlight(object, fillColor, outlineColor, fillTrans, outlineTrans)
+    if not object then return end
+    if object:FindFirstChild("FackhubHighlight") then return end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "FackhubHighlight"
+    highlight.FillColor = fillColor or Color3.fromRGB(255, 255, 255)
+    highlight.OutlineColor = outlineColor or Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = fillTrans or 0.5
+    highlight.OutlineTransparency = outlineTrans or 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = object
+
+    return highlight
+end
+
+
+-- 2. ฟังก์ชันสร้าง BillboardGui / ESP Text
+local function CreateESPText(object, text, color, offset, size)
+    if not object then return end
+    if object:FindFirstChild("FackhubText") then return end
+
+    color = color or Color3.fromRGB(255, 255, 255)
+    offset = offset or Vector3.new(0, 3, 0)
+    size = size or UDim2.new(0, 150, 0, 40)
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "FackhubText"
+    billboard.Size = size
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = offset
+    billboard.Parent = object
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = text or object.Name
+    textLabel.TextColor3 = color
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Parent = billboard
+
+    return billboard
+end
+
+
+local function CreateESPBox(object, color, size, transparency)
+    if not object then
+        return nil
+    end
+
+    color = color or Color3.fromRGB(0, 255, 0)
+    transparency = transparency or 0.5
+
+    -- Part / MeshPart / UnionOperation ฯลฯ
+    if object:IsA("BasePart") then
+        if object:FindFirstChild("FackhubBox") then
+            return nil
+        end
+
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "FackhubBox"
+        box.Adornee = object
+        box.AlwaysOnTop = true
+        box.ZIndex = 10
+        box.Size = size or object.Size
+        box.Color3 = color
+        box.Transparency = transparency
+        box.Parent = object
+
+        return box
+    end
+
+    -- Model
+    if object:IsA("Model") then
+        local part = object:FindFirstChild("HumanoidRootPart")
+            or object.PrimaryPart
+            or object:FindFirstChildWhichIsA("BasePart", true)
+
+        if not part then
+            warn("ไม่พบ BasePart ใน Model:", object:GetFullName())
+            return nil
+        end
+
+        if part:FindFirstChild("FackhubBox") then
+            return nil
+        end
+
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "FackhubBox"
+        box.Adornee = part
+        box.AlwaysOnTop = true
+        box.ZIndex = 10
+        box.Size = size or part.Size
+        box.Color3 = color
+        box.Transparency = transparency
+        box.Parent = part
+
+        return box
+    end
+
+    return nil
+end
+
+local function InteractPrompt(object, delayTime)
+    if not object then
+        return
+    end
+
+    if delayTime and delayTime > 0 then
+        task.wait(delayTime)
+    end
+
+    local prompts = {}
+
+    -- ถ้า object เองเป็น ProximityPrompt
+    if object:IsA("ProximityPrompt") then
+        table.insert(prompts, object)
+    end
+
+    -- หา ProximityPrompt ทุกตัวที่อยู่ข้างใน object
+    for _, v in ipairs(object:GetDescendants()) do
+        if v:IsA("ProximityPrompt") then
+            table.insert(prompts, v)
+        end
+    end
+
+    -- กดทุก Prompt ที่เจอ
+    for _, prompt in ipairs(prompts) do
+        pcall(function()
+            prompt.Enabled = true
+            fireproximityprompt(prompt)
+        end)
+    end
+end
+
+local function TeleportTo(targetPosition)
+    if not hrp or not targetPosition then
+        return
+    end
+
+    if typeof(targetPosition) == "CFrame" then
+        hrp.CFrame = targetPosition
+
+    elseif typeof(targetPosition) == "Vector3" then
+        hrp.CFrame = CFrame.new(targetPosition)
+
+    elseif typeof(targetPosition) == "Instance" then
+
+        if targetPosition:IsA("BasePart") then
+            hrp.CFrame = targetPosition.CFrame
+
+        elseif targetPosition:IsA("Model") then
+            local root = targetPosition:FindFirstChild("HumanoidRootPart")
+                or targetPosition.PrimaryPart
+                or targetPosition:FindFirstChildWhichIsA("BasePart", true)
+
+            if root then
+                hrp.CFrame = root.CFrame
+            end
+        end
+    end
+end
+
+local function TeleportToNearestSafeLight(folder)
+    local nearest = nil
+    local shortest = math.huge
+
+    for _, v in ipairs(folder:GetChildren()) do
+        local targetPosition
+
+        if v:IsA("BasePart") then
+            targetPosition = v.Position
+
+        elseif v:IsA("Model") then
+            targetPosition = v:GetPivot().Position
+        end
+
+        if targetPosition then
+            local distance = (hrp.Position - targetPosition).Magnitude
+
+            if distance < shortest then
+                shortest = distance
+                nearest = v
+            end
+        end
+    end
+
+    if nearest then
+        TeleportTo(nearest)
+    end
+end
+
+local savedCFrame = nil
+
+local function SaveCFrame()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    savedCFrame = hrp.CFrame
+end
+
+local function ReturnCFrame()
+    if not savedCFrame then
+        return
+    end
+
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    hrp.CFrame = savedCFrame
+end
+
+local function GetMonsterRoot(monster)
+    if monster:IsA("Model") then
+        return monster:FindFirstChild("HumanoidRootPart")
+            or monster.PrimaryPart
+            or monster:FindFirstChildWhichIsA("BasePart", true)
+    elseif monster:IsA("BasePart") then
+        return monster
+    end
+
+    return nil
+end
+
+
+local function IsMonsterNear(monsterPath, target, maxDistance)
+    if not monsterPath or not target then
+        return false
+    end
+
+    local targetPosition
+
+    if target:IsA("BasePart") then
+        targetPosition = target.Position
+    elseif typeof(target) == "Vector3" then
+        targetPosition = target
+    else
+        return false
+    end
+
+    for _, monster in ipairs(monsterPath:GetChildren()) do
+        local root = GetMonsterRoot(monster)
+
+        if root then
+            local distance = (root.Position - targetPosition).Magnitude
+
+            if distance <= maxDistance then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+local FloatConnection = nil
+
+local function StartFloat()
+    if FloatConnection then
+        FloatConnection:Disconnect()
+        FloatConnection = nil
+    end
+
+    FloatConnection = RunService.Heartbeat:Connect(function()
+        if hrp and hrp.Parent then
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+        end
+    end)
+end
+
+local function StopFloat()
+    if FloatConnection then
+        FloatConnection:Disconnect()
+        FloatConnection = nil
+    end
+end
+
+local function TweenTo(target, speed)
+    pcall(function()
+        local character = game.Players.LocalPlayer.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+
+        if not hrp or not target then
+            return
+        end
+
+        local targetCFrame
+
+        if target:IsA("BasePart") then
+            targetCFrame = target.CFrame
+        elseif target:IsA("Model") then
+            targetCFrame = target:GetPivot()
+        elseif typeof(target) == "CFrame" then
+            targetCFrame = target
+        elseif typeof(target) == "Vector3" then
+            targetCFrame = CFrame.new(target)
+        else
+            return
+        end
+
+        speed = speed or 100
+
+        local distance = (hrp.Position - targetCFrame.Position).Magnitude
+        local duration = math.max(distance / speed, 0.1)
+
+        local tween = TweenService:Create(
+            hrp,
+            TweenInfo.new(duration, Enum.EasingStyle.Linear),
+            {CFrame = targetCFrame}
+        )
+
+        tween:Play()
+        tween.Completed:Wait()
+    end)
+end
+
+local function SmoothTweenTo(targetCFrame, speed)
+    local character = player.Character
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+
+    if not hrp or typeof(targetCFrame) ~= "CFrame" then
+        return
+    end
+
+    local distance = (hrp.Position - targetCFrame.Position).Magnitude
+    local duration = math.max(distance / (speed or 20), 0.05)
+
+    local tween = TweenService:Create(
+        hrp,
+        TweenInfo.new(duration, Enum.EasingStyle.Linear),
+        {CFrame = targetCFrame}
+    )
+
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+-- ==========================================
+-- Noclip Function
+-- ==========================================
+local FackNoclipEnabled = false
+local FackNoclipConnection = nil
+local FackNoclipOriginal = {}
+
+-- เปิด Noclip
+local function StartNoclip()
+    if FackNoclipEnabled then
+        return
+    end
+
+    FackNoclipEnabled = true
+
+    FackNoclipConnection = RunService.Stepped:Connect(function()
+        pcall(function()
+            if not character then
+                return
+            end
+
+            for _, part in ipairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+
+                    if FackNoclipOriginal[part] == nil then
+                        FackNoclipOriginal[part] = part.CanCollide
+                    end
+
+                    part.CanCollide = false
+                end
+            end
+        end)
+    end)
+end
+
+-- ปิด Noclip
+local function StopNoclip()
+    FackNoclipEnabled = false
+
+    if FackNoclipConnection then
+        FackNoclipConnection:Disconnect()
+        FackNoclipConnection = nil
+    end
+
+    -- คืนค่า CanCollide เดิม
+    for part, originalValue in pairs(FackNoclipOriginal) do
+        pcall(function()
+            if part.Parent then
+                part.CanCollide = originalValue
+            end
+        end)
+
+        FackNoclipOriginal[part] = nil
+    end
+end
+
+local function TeleportWhenMoved(Monster, Target, Threshold)
+    Threshold = Threshold or 0.05
+
+    local function GetPosition(Object)
+        if Object:IsA("BasePart") then
+            return Object.Position
+        elseif Object:IsA("Model") then
+            return Object:GetPivot().Position
+        end
+        return nil
+    end
+
+    if not Monster or not Target then
+        warn("Monster or Target not found")
+        return
+    end
+
+    local StartPosition = GetPosition(Monster)
+    if not StartPosition then
+        warn("Cannot detect Monster position")
+        return
+    end
+
+    local Connection
+    Connection = RunService.Heartbeat:Connect(function()
+        if not Monster.Parent then
+            Connection:Disconnect()
+            return
+        end
+
+        local CurrentPosition = GetPosition(Monster)
+        if not CurrentPosition then return end
+
+        if (CurrentPosition - StartPosition).Magnitude >= Threshold then
+            Connection:Disconnect()
+            TeleportTo(Target)
+        end
+    end)
+
+    return Connection
+end
+
+local function TeleportUntilWreathStops(v)
+    local wreath = workspace.Monsters:WaitForChild("Wreath")
+
+    local interval = 0.15
+    local stillTime = 0
+    local lastPosition
+
+    if wreath:IsA("Model") then
+        lastPosition = wreath:GetPivot().Position
+    elseif wreath:IsA("BasePart") then
+        lastPosition = wreath.Position
+    else
+        return
+    end
+
+    while wreath.Parent do
+        local targetCFrame
+
+        if v:IsA("Model") then
+            targetCFrame = v:GetPivot()
+        elseif v:IsA("BasePart") then
+            targetCFrame = v.CFrame
+        end
+
+        if not targetCFrame then
+            break
+        end
+
+        TeleportTo(targetCFrame)
+        task.wait(interval)
+
+        local currentPosition
+
+        if wreath:IsA("Model") then
+            currentPosition = wreath:GetPivot().Position
+        elseif wreath:IsA("BasePart") then
+            currentPosition = wreath.Position
+        end
+
+        if not currentPosition then
+            break
+        end
+
+        if (currentPosition - lastPosition).Magnitude < 0.05 then
+            stillTime = stillTime + interval
+        else
+            stillTime = 0
+        end
+
+        if stillTime >= 1 then
+            break
+        end
+
+        lastPosition = currentPosition
+    end
+end
+
+local camera = workspace.CurrentCamera
+
+-- ค่าตั้งต้น (ถูกเขียนทับจากใน Toggle ตอนเปิดสวิตช์)
+local Config = {
+    GetTarget = function() return nil end,
+    Tool = "",
+    UseActivate = true,
+    ClicksPerSec = 10,
+    BehindDist = 3,
+    LowHP = 50,
+    RecoverHP = 80,
+    SafeHeight = 50,
+    HealOrbit = true,
+    HealOrbitSize = 20,
+    HealOrbitSpeed = 40,
+    DodgeEnabled = true,
+    DodgeAnims = {},
+    DodgeOrbit = true,
+    DodgeOrbitSize = 15,
+    DodgeOrbitSpeed = 40,
+    DebugAnims = false,
+    AttackEnabled = true,
+    GetAttackFolder = function() return nil end,
+    AttackHeight = 40,
+    AttackLinger = 0.5,
+    MinionsEnabled = true,
+    GetMinionsFolder = function() return nil end,
+    MinionTool = "",
+    MinionDist = 3,
+    UseRemoteFire = true,
+    FireRemoteName = "Fire",
+    AimOffset = Vector3.new(0, 0, 0),
+    AutoReload = true,
+    ReloadByClick = true,
+    ReloadByKey = true,
+    ReloadKey = 0x52,
+    ReloadInterval = 1.0,
+    ReloadTimeout = 4,
+    DebugReload = false,
+}
+
+local farming = false
+local healing = false
+local dodging = false
+local dodgeUntil = 0
+local healPos
+local dodgePos
+local healStart = 0
+local dodgeStart = 0
+local heartbeatConn
+local currentTarget   -- บอส
+local currentMinion   -- มินเนี่ยนที่ล็อกอยู่
+local fightTarget     -- ตัวที่กำลังสู้จริง
+local fightIsMinion = false
+local lastSearch = 0
+local lastWarn = 0
+local Toggle
+
+local bossAnimator
+local seenTracks = setmetatable({}, {__mode = "k"})
+
+-- ===== บินวนเป็นสี่เหลี่ยม =====
+-- half = ครึ่งหนึ่งของด้านสี่เหลี่ยม (studs), speed = ความเร็ว (studs/วินาที)
+local function squareOffset(elapsed, half, speed)
+    half = math.max(half, 0.5)
+    local side = half * 2
+    local s = (elapsed * speed) % (side * 4)
+    local idx = math.floor(s / side)
+    local along = s - idx * side
+    if idx == 0 then
+        return Vector3.new(-half + along, 0, -half)
+    elseif idx == 1 then
+        return Vector3.new(half, 0, -half + along)
+    elseif idx == 2 then
+        return Vector3.new(half - along, 0, half)
+    else
+        return Vector3.new(-half, 0, half - along)
+    end
+end
+
+-- ===== ฟังก์ชันพื้นฐาน =====
+local function isAlive(model)
+    if not (model and model.Parent) then return false end
+    local hum = model:FindFirstChildOfClass("Humanoid")
+    if hum then return hum.Health > 0 end
+    return true
+end
+
+local function getRoot(model)
+    return model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+        or model:FindFirstChildWhichIsA("BasePart", true)
+end
+
+local function findTarget()
+    local ok, obj = pcall(Config.GetTarget)
+    if ok and typeof(obj) == "Instance" and obj:IsA("Model") and isAlive(obj) then
+        return obj
+    end
+    return nil
+end
+
+local function findMinion()
+    if not Config.MinionsEnabled then return nil end
+    if isAlive(currentMinion) then return currentMinion end
+
+    local ok, folder = pcall(Config.GetMinionsFolder)
+    if not (ok and typeof(folder) == "Instance") then return nil end
+
+    local best, bestDist
+    for _, obj in ipairs(folder:GetChildren()) do
+        if obj:IsA("Model") and isAlive(obj) then
+            local root = getRoot(obj)
+            if root then
+                local d = (root.Position - hrp.Position).Magnitude
+                if not bestDist or d < bestDist then
+                    best, bestDist = obj, d
+                end
+            end
+        end
+    end
+    currentMinion = best
+    return best
+end
+
+-- มี Model หรือ BasePart อยู่ใน AttackFolder หรือไม่ (ดูเฉพาะลูกตรงๆ)
+local function attackPresent()
+    if not Config.AttackEnabled then return false end
+    local ok, folder = pcall(Config.GetAttackFolder)
+    if not (ok and typeof(folder) == "Instance") then return false end
+    for _, obj in ipairs(folder:GetChildren()) do
+        if obj:IsA("Model") or obj:IsA("BasePart") then
+            return true
+        end
+    end
+    return false
+end
+
+local function currentToolName()
+    if fightIsMinion and Config.MinionTool and Config.MinionTool ~= "" then
+        return Config.MinionTool
+    end
+    return Config.Tool or ""
+end
+
+-- ============================================================
+--  ระบบยิงปืนตรงๆ ผ่าน RemoteEvent (เรียนรู้จากนัดที่เกมยิงเอง)
+-- ============================================================
+local Templates = {} -- [ชื่อปืน] = {args, muzzle, remoteName}
+local firingByUs = false
+
+local function getMuzzle(tool)
+    local p = tool:FindFirstChild("ShootPart") or tool:FindFirstChild("Handle")
+    return p and p:IsA("BasePart") and p.Position or nil
+end
+
+if hookmetamethod and getnamecallmethod then
+    local old
+    local function hook(self, ...)
+        if getnamecallmethod() == "FireServer"
+            and not firingByUs
+            and not (checkcaller and checkcaller())
+            and typeof(self) == "Instance" and self:IsA("RemoteEvent")
+            and self.Name == Config.FireRemoteName then
+
+            local args = table.pack(...)
+            pcall(function()
+                local tool = self:FindFirstAncestorWhichIsA("Tool")
+                if tool then
+                    local first = not Templates[tool.Name]
+                    Templates[tool.Name] = {
+                        args = args,
+                        muzzle = getMuzzle(tool) or hrp.Position,
+                        remoteName = self.Name,
+                    }
+                    if first then
+                        print("[เรียนรู้] ปืน '" .. tool.Name .. "' จำนวนอาร์กิวเมนต์ = " .. args.n)
+                        for i = 1, args.n do
+                            print("   ", i, typeof(args[i]), tostring(args[i]))
+                        end
+                    end
+                end
+            end)
+        end
+        return old(self, ...)
+    end
+    old = hookmetamethod(game, "__namecall", newcclosure and newcclosure(hook) or hook)
+else
+    warn("Executor ไม่รองรับ hookmetamethod จะใช้วิธีหันกล้อง+คลิกแทน")
+end
+
+-- สร้างอาร์กิวเมนต์ใหม่จากนัดที่เรียนรู้ โดยแทนที่ค่าที่เป็นตำแหน่ง/เป้าหมาย
+local function buildArgs(tpl, target, muzzleNow)
+    local root = getRoot(target)
+    if not root then return nil end
+
+    local aimPart = root
+    for i = 1, tpl.args.n do
+        local v = tpl.args[i]
+        if typeof(v) == "Instance" and v:IsA("BasePart") and not v:IsDescendantOf(character) then
+            aimPart = target:FindFirstChild(v.Name, true) or root
+            break
+        end
+    end
+    local aimPos = aimPart.Position + Config.AimOffset
+
+    local out = {}
+    for i = 1, tpl.args.n do
+        local v = tpl.args[i]
+        local t = typeof(v)
+
+        if t == "Vector3" then
+            if (v - tpl.muzzle).Magnitude <= 6 then
+                out[i] = muzzleNow                               -- จุดเริ่มกระสุน
+            elseif math.abs(v.Magnitude - 1) < 0.02 then
+                out[i] = (aimPos - muzzleNow).Unit               -- ทิศทาง
+            else
+                out[i] = aimPos                                  -- จุดที่โดน
+            end
+        elseif t == "CFrame" then
+            if (v.Position - tpl.muzzle).Magnitude <= 6 then
+                out[i] = CFrame.lookAt(muzzleNow, aimPos)
+            else
+                out[i] = CFrame.new(aimPos)
+            end
+        elseif t == "Instance" then
+            if v:IsA("BasePart") and not v:IsDescendantOf(character) then
+                out[i] = aimPart
+            elseif v:IsA("Humanoid") and not v:IsDescendantOf(character) then
+                out[i] = target:FindFirstChildOfClass("Humanoid") or v
+            elseif v:IsA("Model") and v ~= character then
+                out[i] = target
+            else
+                out[i] = v
+            end
+        else
+            out[i] = v
+        end
+    end
+    return out
+end
+
+local function fireRemote(tool, target)
+    local tpl = Templates[tool.Name]
+    if not tpl then return false end
+    local remote = tool:FindFirstChild(tpl.remoteName)
+    if not (remote and remote:IsA("RemoteEvent")) then return false end
+
+    local muzzleNow = getMuzzle(tool) or hrp.Position
+    local args = buildArgs(tpl, target, muzzleNow)
+    if not args then return false end
+
+    firingByUs = true
+    local ok = pcall(function()
+        remote:FireServer(table.unpack(args, 1, tpl.args.n))
+    end)
+    firingByUs = false
+    return ok
+end
+
+-- ===== รีโหลด: คลิก + กดปุ่ม (เปิด/ปิดแยกกันได้) =====
+local reloadStart = 0
+local lastReloadFire = 0
+
+-- คืน true ถ้ากำลังรีโหลดอยู่ (ให้หยุดยิงรีโมทไว้ก่อน)
+local function handleReload(tool)
+    local ammo = tool:FindFirstChild("Ammo")
+    if not (ammo and (ammo:IsA("IntValue") or ammo:IsA("NumberValue"))) then return false end
+    if Config.DebugReload then print("[Reload] Ammo =", ammo.Value) end
+
+    if ammo.Value > 0 then
+        reloadStart = 0
+        return false
+    end
+
+    if reloadStart == 0 then reloadStart = tick() end
+
+    if tick() - reloadStart > Config.ReloadTimeout then
+        return false
+    end
+
+    if tick() - lastReloadFire > Config.ReloadInterval then
+        lastReloadFire = tick()
+
+        if Config.ReloadByClick then
+            local size = camera.ViewportSize
+            local center = Vector2.new(size.X / 2, size.Y / 2)
+            pcall(function() tool:Activate() end)
+            VirtualUser:CaptureController()
+            VirtualUser:Button1Down(center, camera.CFrame)
+            task.wait(0.05)
+            VirtualUser:Button1Up(center, camera.CFrame)
+        end
+
+        if Config.ReloadByKey and keypress and keyrelease then
+            pcall(keypress, Config.ReloadKey)
+            task.wait(0.05)
+            pcall(keyrelease, Config.ReloadKey)
+        end
+    end
+
+    return true
+end
+
+-- วิธีสำรอง: หาตำแหน่งเป้าบนจอสำหรับคลิก
+local function getClickPos()
+    local root = fightTarget and getRoot(fightTarget)
+    if root then
+        local v, onScreen = camera:WorldToViewportPoint(root.Position)
+        if onScreen then return Vector2.new(v.X, v.Y) end
+    end
+    local size = camera.ViewportSize
+    return Vector2.new(size.X / 2, size.Y / 2)
+end
+
+-- ===== ถือไอเท็ม =====
+local function equipTool()
+    local name = currentToolName()
+    if name == "" then return nil end
+    if not (character and character.Parent and humanoid and humanoid.Health > 0) then return nil end
+
+    local held = character:FindFirstChild(name)
+    if held and held:IsA("Tool") then return held end
+
+    local backpack = player:FindFirstChildOfClass("Backpack")
+    local tool = backpack and backpack:FindFirstChild(name)
+
+    if not (tool and tool:IsA("Tool")) then
+        if tick() - lastWarn > 3 then
+            lastWarn = tick()
+            local names = {}
+            if backpack then
+                for _, t in ipairs(backpack:GetChildren()) do
+                    table.insert(names, t.Name)
+                end
+            end
+            warn("ไม่เจอไอเท็ม '" .. name .. "' ใน Backpack มี: " .. table.concat(names, ", "))
+        end
+        return nil
+    end
+
+    humanoid:EquipTool(tool)
+    task.wait()
+    if tool.Parent ~= character then
+        tool.Parent = character
+    end
+    return tool.Parent == character and tool or nil
+end
+
+-- ===== ตรวจจับท่าของบอส =====
+local function getBossAnimator()
+    if not currentTarget then return nil end
+    if bossAnimator and bossAnimator:IsDescendantOf(currentTarget) then
+        return bossAnimator
+    end
+    bossAnimator = currentTarget:FindFirstChildWhichIsA("Animator", true)
+    return bossAnimator
+end
+
+local function bossStartedDodgeAnim()
+    local animator = getBossAnimator()
+    if not animator then return nil end
+
+    for track in pairs(seenTracks) do
+        if not track.IsPlaying then seenTracks[track] = nil end
+    end
+
+    local result
+    for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+        if not seenTracks[track] then
+            seenTracks[track] = true
+            local id = string.match(tostring(track.Animation and track.Animation.AnimationId or ""), "%d+")
+
+            if Config.DebugAnims then
+                print(("[Boss Anim] ID=%s | Name=%s | Looped=%s | Length=%.2f")
+                    :format(tostring(id), track.Name, tostring(track.Looped), track.Length))
+            end
+
+            local info = id and Config.DodgeAnims and Config.DodgeAnims[id]
+            if info and (not result or info.time > result.time) then
+                result = info
+            end
+        end
+    end
+    return result
+end
+
+-- ===== เริ่ม/หยุด =====
+local function stopFarm()
+    if not farming then return end
+    farming = false
+    healing = false
+    dodging = false
+    healPos = nil
+    dodgePos = nil
+    dodgeUntil = 0
+    currentTarget = nil
+    currentMinion = nil
+    fightTarget = nil
+    fightIsMinion = false
+    bossAnimator = nil
+    reloadStart = 0
+    table.clear(seenTracks)
+    if heartbeatConn then
+        heartbeatConn:Disconnect()
+        heartbeatConn = nil
+    end
+    pcall(function() VirtualUser:Button1Up(Vector2.new(0, 0), camera.CFrame) end)
+end
+
+local function startFarm()
+    if farming then return end
+    farming = true
+    currentTarget = findTarget()
+
+    -- ลูปถือไอเท็ม
+    task.spawn(function()
+        while farming do
+            equipTool()
+            task.wait(0.2)
+        end
+    end)
+
+    -- ลูปยิง/ต่อย (ไม่ทำตอนรีเลือดหรือหลบ)
+    task.spawn(function()
+        while farming do
+            if fightTarget and isAlive(fightTarget) and not healing and not dodging then
+                local name = currentToolName()
+                local tool = name ~= "" and character and character:FindFirstChild(name) or nil
+                if tool and not tool:IsA("Tool") then tool = nil end
+
+                if name == "" or tool then
+                    local reloading = tool and Config.AutoReload and handleReload(tool)
+
+                    if not reloading then
+                        local fired = false
+                        if tool and Config.UseRemoteFire then
+                            fired = fireRemote(tool, fightTarget)
+                        end
+
+                        if not fired then
+                            local cp = getClickPos()
+                            if Config.UseActivate and tool then
+                                pcall(function() tool:Activate() end)
+                            end
+                            VirtualUser:CaptureController()
+                            VirtualUser:Button1Down(cp, camera.CFrame)
+                            task.wait(0.02)
+                            VirtualUser:Button1Up(cp, camera.CFrame)
+                        end
+                    end
+                end
+            end
+            task.wait(math.max(1 / Config.ClicksPerSec - 0.02, 0.01))
+        end
+    end)
+
+    heartbeatConn = RunService.Heartbeat:Connect(function()
+        if not (hrp and hrp.Parent and humanoid and humanoid.Health > 0) then
+            healing = false
+            dodging = false
+            healPos = nil
+            dodgePos = nil
+            fightTarget = nil
+            return
+        end
+
+        -- ===== 1) รีเลือด (สำคัญสุด) =====
+        local recover = math.max(Config.RecoverHP, Config.LowHP + 1)
+        if healing then
+            if humanoid.Health >= recover then
+                healing = false
+                healPos = nil
+            end
+        elseif humanoid.Health < Config.LowHP then
+            healing = true
+            dodging = false
+            dodgePos = nil
+            healPos = hrp.Position + Vector3.new(0, Config.SafeHeight, 0)
+            healStart = tick()
+            warn(("รีเลือด: HP %.0f / %.0f"):format(humanoid.Health, humanoid.MaxHealth))
+        end
+
+        if healing then
+            local pos = healPos
+            if Config.HealOrbit then
+                pos = healPos + squareOffset(tick() - healStart, Config.HealOrbitSize, Config.HealOrbitSpeed)
+            end
+            hrp.CFrame = CFrame.new(pos)
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+            return
+        end
+
+        -- ===== หาบอส =====
+        if not isAlive(currentTarget) then
+            currentTarget = nil
+            bossAnimator = nil
+            table.clear(seenTracks)
+            if tick() - lastSearch > 0.5 then
+                lastSearch = tick()
+                currentTarget = findTarget()
+            end
+        end
+
+        -- ===== 2) หลบ =====
+        -- 2a) มีของโผล่ใน AttackFolder: เริ่มหลบ (ถ้ายังไม่ได้หลบ) และต่อเวลาไปเรื่อยๆ
+        if attackPresent() then
+            if not dodging then
+                dodging = true
+                dodgeStart = tick()
+                dodgePos = hrp.Position + Vector3.new(0, Config.AttackHeight, 0)
+            end
+            dodgeUntil = math.max(dodgeUntil, tick() + Config.AttackLinger)
+        end
+
+        -- 2b) ท่าอนิเมชันของบอส
+        if Config.DodgeEnabled and currentTarget and not dodging then
+            local info = bossStartedDodgeAnim()
+            if info then
+                dodging = true
+                dodgeUntil = tick() + info.time
+                dodgeStart = tick()
+                dodgePos = hrp.Position + Vector3.new(0, info.height, 0)
+            end
+        end
+
+        if dodging and tick() >= dodgeUntil then
+            dodging = false
+            dodgePos = nil
+        end
+
+        if dodging then
+            local pos = dodgePos
+            if Config.DodgeOrbit then
+                pos = dodgePos + squareOffset(tick() - dodgeStart, Config.DodgeOrbitSize, Config.DodgeOrbitSpeed)
+            end
+            hrp.CFrame = CFrame.new(pos)
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+            return
+        end
+
+        -- ===== 3) เลือกเป้าหมาย: มินเนี่ยนก่อน ไม่มีค่อยบอส =====
+        local minion = findMinion()
+        fightIsMinion = minion ~= nil
+        fightTarget = minion or currentTarget
+        if not fightTarget then return end
+
+        local root = getRoot(fightTarget)
+        if not root then return end
+
+        local dist = fightIsMinion and Config.MinionDist or Config.BehindDist
+        local targetPos = root.Position
+        local pos = (root.CFrame * CFrame.new(0, 0, dist)).Position
+
+        hrp.CFrame = CFrame.lookAt(pos, Vector3.new(targetPos.X, pos.Y, targetPos.Z))
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+
+        camera.CFrame = CFrame.lookAt(camera.CFrame.Position, targetPos + Config.AimOffset)
+    end)
+end
+
+local eaTab = Window:CreateTab("Harmon", "align-justify")
+
+local Section = eaTab:CreateSection("Part 1")
+
+local Button = eaTab:CreateButton({
+    Name = "TP Boss Fight",
+
+    Callback = function()
+        TeleportTo(workspace.MainPuzzle.Part2.ExitTrigger)
+    end,
+})
+
+local Toggle = eaTab:CreateToggle({
+    Name = "Auto Boss Fight",
+    CurrentValue = false,
+    Flag = "AutoFarmToggle",
+    Callback = function(Value)
+        if Value then
+            Config = {
+                -- บอส (ใส่ที่อยู่ตรงๆ)
+                GetTarget = function()
+                    return workspace.MainPuzzle.Part3.MainBossFight.Harmon
+                end,
+
+                -- ของที่จะถือตอนสู้บอส ("" = ไม่ถืออะไร)
+                Tool = "Punch",
+                UseActivate = true,
+                ClicksPerSec = 10,
+                BehindDist = 3,
+
+                -- มินเนี่ยน (โมเดลในโฟลเดอร์ จัดการก่อนบอส)
+                MinionsEnabled = false,
+                GetMinionsFolder = function()
+                    return workspace.MainPuzzle.Part3.MainBossFight.MinionsFolder
+                end,
+                MinionTool = "Pistol",
+                MinionDist = 8,
+
+                -- หลบเมื่อมี Model/BasePart โผล่ในโฟลเดอร์โจมตี
+                AttackEnabled = false,
+                GetAttackFolder = function()
+                    return workspace.MainPuzzle.Part3.MainBossFight.AttackFolder
+                end,
+                AttackHeight = 40,     -- วาปขึ้นสูงกี่ studs
+                AttackLinger = 0.5,    -- ของหายแล้วลอยต่ออีกกี่วินาที
+
+                -- ยิงปืนตรงผ่าน RemoteEvent (เรียนรู้จากนัดที่เกมยิงเอง)
+                UseRemoteFire = false,
+                FireRemoteName = "Fire",
+                AimOffset = Vector3.new(0, 0, 0),
+
+                -- รีโหลดอัตโนมัติเมื่อ Ammo = 0
+                AutoReload = false,
+                ReloadByClick = true,
+                ReloadByKey = true,
+                ReloadKey = 0x52,
+                ReloadInterval = 1.0,
+                ReloadTimeout = 4,
+                DebugReload = false,
+
+                -- รีเลือด
+                LowHP = 50,
+                RecoverHP = 80,
+                SafeHeight = 50,
+                HealOrbit = true,
+                HealOrbitSize = 30,
+                HealOrbitSpeed = 150,
+
+                -- หลบท่าอนิเมชันของบอส (ใช้ค่าบินวนชุดเดียวกับของใน AttackFolder)
+                DodgeEnabled = true,
+                DodgeAnims = {
+                    ["71703219768405"]  = {time = 4.9, height = 40},
+                    ["140480920996003"] = {time = 1.3, height = 40},
+                },
+                DodgeOrbit = true,
+                DodgeOrbitSize = 30,
+                DodgeOrbitSpeed = 150,
+                DebugAnims = false,
+            }
+            startFarm()
+        else
+            stopFarm()
+        end
+    end,
+})
+
+local Section = eaTab:CreateSection("ESP item")
+
+local Toggle = eaTab:CreateToggle({
+    Name = "esp Lever",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.MainPuzzle.Part1:GetChildren()) do
+                if v:IsA("Model") then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, v.Name, Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.MainPuzzle.Part1:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Toggle = eaTab:CreateToggle({
+    Name = "esp Eggs",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.MainPuzzle.Part2.Eggs:GetChildren()) do
+                if v:IsA("MeshPart") then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, "Egg", Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.MainPuzzle.Part2.Eggs:GetChildren()) do
+                if v:IsA("MeshPart") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local eaTab = Window:CreateTab("DemonBunny", "align-justify")
+
+local Section = eaTab:CreateSection("Part 1")
+
+local Button = eaTab:CreateButton({
+    Name = "Skip map1",
+
+    Callback = function()
+        TeleportTo(workspace.MainPuzzle.Part1.Cave.ExitTrigger)
+    end,
+})
+
+local Button = eaTab:CreateButton({
+    Name = "Auto Eggs Code",
+
+    Callback = function()
+        local Part2 = workspace.MainPuzzle.Part2
+        local Code = Part2.Code
+        local StonePillars = Code.StonePillars
+
+        local Colors = {
+            "Blue",
+            "Green",
+            "Red",
+            "White"
+        }
+
+        local function CountEggs(folder)
+            local count = 0
+
+            for _, egg in ipairs(folder:GetChildren()) do
+                if egg.Name == "Egg" then
+                    count += 1
+                end
+            end
+
+            return count
+        end
+
+        for _, color in ipairs(Colors) do
+            local eggFolder = Code:FindFirstChild(color .. "Eggs")
+            local codeValue = Code:FindFirstChild(color .. "Code")
+            local pillar = StonePillars:FindFirstChild(color)
+
+            if eggFolder and codeValue and pillar then
+                local eggCount = CountEggs(eggFolder)
+                local main = pillar:FindFirstChild("Main")
+                local prompt = main and main:FindFirstChildWhichIsA(
+                    "ProximityPrompt",
+                    true
+                )
+
+                if main and prompt then
+                    -- print(color, "จำนวนไข่:", eggCount, "ค่าปัจจุบัน:", codeValue.Value)
+
+                    -- วาปไปหาเสาสีนี้ก่อน หากค่าปัจจุบันยังไม่ตรง
+                    if codeValue.Value < eggCount then
+                        local targetPosition = main.CFrame * CFrame.new(0, 0, -3)
+                        StartFloat()
+                        TeleportTo(targetPosition)
+                        task.wait(0.3)
+                    end
+
+                    -- กดจนกว่า Value จะเท่ากับจำนวนไข่
+                    while codeValue.Value < eggCount do
+                        local oldValue = codeValue.Value
+
+                        InteractPrompt(prompt, 0.3)
+
+                        -- รอจนค่าเปลี่ยน เพื่อไม่ให้กดซ้ำเร็วเกินไป
+                        local startTime = os.clock()
+
+                        repeat
+                            task.wait(0.1)
+                        until codeValue.Value ~= oldValue
+                            or os.clock() - startTime >= 3
+
+                        -- ป้องกันลูปไม่รู้จบหากค่าของปุ่มไม่เปลี่ยน
+                        if codeValue.Value == oldValue then
+                            warn(color .. " ค่าไม่เปลี่ยน หยุดการกด")
+                            break
+                        end
+                    end
+
+                    if codeValue.Value == eggCount then
+                        -- print(color .. " สำเร็จ! Value =", codeValue.Value)
+                        StopFloat()
+                    elseif codeValue.Value > eggCount then
+                        warn(color .. " ค่าเกินจำนวนไข่")
+                    end
+
+                    task.wait(0.3)
+                else
+                    warn("ไม่พบ Main หรือ ProximityPrompt ของสี " .. color)
+                end
+            else
+                warn("ไม่พบโฟลเดอร์หรือ Value ของสี " .. color)
+            end
+        end
+    end,
+})
+
+local Toggle = eaTab:CreateToggle({
+    Name = "Auto Boss Fight",
+    CurrentValue = false,
+    Flag = "AutoFarmToggle",
+    Callback = function(Value)
+        if Value then
+            Config = {
+                -- บอส (ใส่ที่อยู่ตรงๆ)
+                GetTarget = function()
+                    return workspace.MainPuzzle.Part3.MainBossFight.DarkEgg
+                end,
+
+                -- ของที่จะถือตอนสู้บอส ("" = ไม่ถืออะไร)
+                Tool = "Pistol",
+                UseActivate = true,
+                ClicksPerSec = 10,
+                BehindDist = 50,
+
+                -- มินเนี่ยน (โมเดลในโฟลเดอร์ จัดการก่อนบอส)
+                MinionsEnabled = true,
+                GetMinionsFolder = function()
+                    return workspace.MainPuzzle.Part3.MainBossFight.MinionsFolder
+                end,
+                MinionTool = "Pistol",
+                MinionDist = -15,
+
+                -- หลบเมื่อมี Model/BasePart โผล่ในโฟลเดอร์โจมตี
+                AttackEnabled = true,
+                GetAttackFolder = function()
+                    return workspace.MainPuzzle.Part3.MainBossFight.AttackFolder
+                end,
+                AttackHeight = 40,     -- วาปขึ้นสูงกี่ studs
+                AttackLinger = 0.5,    -- ของหายแล้วลอยต่ออีกกี่วินาที
+
+                -- ยิงปืนตรงผ่าน RemoteEvent (เรียนรู้จากนัดที่เกมยิงเอง)
+                UseRemoteFire = true,
+                FireRemoteName = "Fire",
+                AimOffset = Vector3.new(0, 0, 0),
+
+                -- รีโหลดอัตโนมัติเมื่อ Ammo = 0
+                AutoReload = true,
+                ReloadByClick = true,
+                ReloadByKey = true,
+                ReloadKey = 0x52,
+                ReloadInterval = 1.0,
+                ReloadTimeout = 4,
+                DebugReload = false,
+
+                -- รีเลือด
+                LowHP = 50,
+                RecoverHP = 80,
+                SafeHeight = 50,
+                HealOrbit = true,
+                HealOrbitSize = 30,
+                HealOrbitSpeed = 150,
+
+                -- หลบท่าอนิเมชันของบอส (ใช้ค่าบินวนชุดเดียวกับของใน AttackFolder)
+                DodgeEnabled = true,
+                DodgeAnims = {
+                    ["71703219768405"]  = {time = 4.9, height = 40},
+                    ["140480920996003"] = {time = 1.3, height = 40},
+                },
+                DodgeOrbit = true,
+                DodgeOrbitSize = 30,
+                DodgeOrbitSpeed = 150,
+                DebugAnims = false,
+            }
+            startFarm()
+        else
+            stopFarm()
+        end
+    end,
+})
+
+local Section = eaTab:CreateSection("ESP item")
+
+local Toggle = eaTab:CreateToggle({
+    Name = "esp Eggs",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.MainPuzzle.Part2.Eggs:GetChildren()) do
+                if v:IsA("MeshPart") then
+                    CreateESPBox(v,Color3.fromRGB(0, 255, 0),Vector3.new(2, 2, 2))
+                    CreateESPText(v, "Egg", Color3.fromRGB(0, 255, 0), Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.MainPuzzle.Part2.Eggs:GetChildren()) do
+                if v:IsA("MeshPart") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Toggle = eaTab:CreateToggle({
+    Name = "esp Eggs Code",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, v in ipairs(workspace.MainPuzzle.Part2.Code:GetDescendants()) do
+                if v:IsA("MeshPart") and v.Name == "Egg" then
+                    CreateESPBox(v,v.Color,Vector3.new(2, 2, 2))
+                    CreateESPText(v, "Egg", v.Color, Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+                end
+            end
+            print("on")
+        else
+            for _, v in ipairs(workspace.MainPuzzle.Part2.Code:GetDescendants()) do
+                if v:IsA("MeshPart") and v.Name == "Egg" then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
+
+local Section = eaTab:CreateSection("ESP Monster")
+
+local Toggle = eaTab:CreateToggle({
+    Name = "esp Monster",
+    CurrentValue = false,
+    Flag = "Toggle1",
+
+    Callback = function(Value)
+        if Value then
+            for i,v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                CreateESPBox(v,Color3.fromRGB(255, 0, 0),Vector3.new(5, 12, 5))
+                CreateESPText(v,v.Name,Color3.fromRGB(255, 0, 0),Vector3.new(0, 6, 0),UDim2.new(0, 150, 0, 40))
+                print("on")
+             end
+        end
+        else
+            for _, v in pairs(workspace.Monsters:GetChildren()) do
+                if v:IsA("Model") then
+                    RemoveESP(v)
+                end
+            end
+            print("off")
+        end
+    end,
+})
