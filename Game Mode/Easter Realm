@@ -1226,7 +1226,7 @@ local Toggle = eaTab:CreateToggle({
 
 local eaTab = Window:CreateTab("DemonBunny", "align-justify")
 
-local Section = eaTab:CreateSection("Part 1")
+local Section = eaTab:CreateSection("Part 2")
 
 local Button = eaTab:CreateButton({
     Name = "Skip map1",
