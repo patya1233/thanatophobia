@@ -1,37 +1,41 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- =========================================================
+-- FACK HUB | WindUI Version
+-- Converted from Rayfield -> WindUI (v1.6.x)
+-- =========================================================
 
-local Window = Rayfield:CreateWindow({
-   Name = "Fack HUB",
-   Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
-   LoadingTitle = "Thanatophobia",
-   LoadingSubtitle = "by KENG",
-   Theme = "Default", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+local WindUI
 
-   DisableRayfieldPrompts = false,
-   DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
+do
+    local Success, Result = pcall(function()
+        return loadstring(game:HttpGet(
+            "https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"
+        ))()
+    end)
 
-   ConfigurationSaving = {
-    Enabled = true,
-    FolderName = "FackHUB",
-    FileName = "FackHUB"
-    },
+    if not Success or not Result then
+        warn("[Fack HUB] Failed to load WindUI:", tostring(Result))
+        return
+    end
 
-   Discord = {
-      Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
-      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
-      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
-   },
+    WindUI = Result
+end
 
-   KeySystem = false, -- Set this to true to use our key system
-   KeySettings = {
-      Title = "Untitled",
-      Subtitle = "Key System",
-      Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
-      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
-      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
-      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
-      Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
-   }
+local Window = WindUI:CreateWindow({
+    Title = "Fack HUB",
+    Icon = "ghost", -- lucide icon
+    Author = "Thanatophobia  •  by KENG",
+    Folder = "FackHUB",
+
+    Size = UDim2.fromOffset(580, 460),
+    MinSize = Vector2.new(560, 350),
+    MaxSize = Vector2.new(850, 560),
+    ToggleKey = Enum.KeyCode.K,
+    Transparent = true,
+    Theme = "Dark",
+    Resizable = true,
+    SideBarWidth = 200,
+    HideSearchBar = false,
+    ScrollBarEnabled = true,
 })
 
 local Players = game:GetService("Players")
@@ -40,6 +44,69 @@ local UserInputService = game:GetService("UserInputService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local LocalPlayer = Players.LocalPlayer
+
+-- ========================================
+-- Config (แทน Rayfield ConfigurationSaving)
+-- ========================================
+
+local ConfigManager = Window.ConfigManager
+local MainConfig = ConfigManager:CreateConfig("FackHUB")
+
+local ConfigReady = false
+local SavePending = false
+
+local function QueueSave()
+
+    if not ConfigReady or SavePending then
+        return
+    end
+
+    SavePending = true
+
+    task.delay(1, function()
+        SavePending = false
+
+        pcall(function()
+            MainConfig:Save()
+        end)
+    end)
+end
+
+local function Register(Flag, Element)
+    pcall(function()
+        MainConfig:Register(Flag, Element)
+    end)
+
+    return Element
+end
+
+-- ครอบ Callback ให้ pcall + auto save
+local function Cb(Func)
+    return function(...)
+        local Ok, Err = pcall(Func, ...)
+
+        if not Ok then
+            warn("[Fack HUB] Callback Error:", tostring(Err))
+        end
+
+        QueueSave()
+    end
+end
+
+-- ========================================
+-- Notify
+-- ========================================
+
+local function Notify(Title, Content, Duration)
+    pcall(function()
+        WindUI:Notify({
+            Title = Title,
+            Content = Content,
+            Duration = Duration or 5,
+            Icon = "bell",
+        })
+    end)
+end
 
 -- ========================================
 -- Shared Character
@@ -103,7 +170,6 @@ local ModifiedPrompts = setmetatable({}, {__mode = "k"})
 local NoclipEnabled = false
 local NoclipConnection = nil
 local NoclipOriginalStates = {}
-
 
 -- ========================================
 -- Fly
@@ -706,33 +772,32 @@ LocalPlayer.CharacterAdded:Connect(function(NewCharacter)
 
 end)
 
-local uTab = Window:CreateTab("Update", "align-justify")
+-- =========================================================
+-- UPDATE TAB
+-- =========================================================
 
--- ==========================================
--- Update Log
--- ==========================================
-
-local UpdateLog = uTab:CreateParagraph({
-    Title = "📜 Update Log",
-    Content = "Version 1.0 • Latest Features"
+local uTab = Window:Tab({
+    Title = "Update",
+    Icon = "align-justify",
 })
 
--- ==========================================
--- UPDATE 1.0
--- ==========================================
+uTab:Paragraph({
+    Title = "📜 Update Log",
+    Desc = "Version 1.0 • Latest Features"
+})
 
-local GameMode = uTab:CreateParagraph({
+uTab:Paragraph({
     Title = "🎮 Game Mode",
-    Content = [[
+    Desc = [[
 ⚙️ Auto Complete
 • Working on Auto Complete for additional Game Modes.
 • Game Mode support coming soon.
 ]]
 })
 
-local Update10 = uTab:CreateParagraph({
+uTab:Paragraph({
     Title = "🚀 Update 1.0",
-    Content = [[
+    Desc = [[
 💡 New Features
 
 🌙 Fulbright
@@ -758,78 +823,72 @@ local Update10 = uTab:CreateParagraph({
 ]]
 })
 
--- ==========================================
 -- BOOK 1
--- ==========================================
 
-local Chapter1 = uTab:CreateParagraph({
+uTab:Paragraph({
     Title = "📘 Book 1 | Chapter 1",
-    Content = [[
+    Desc = [[
 ✅ Added Auto Complete
 👾 Added ESP Monster
 📦 Added ESP Item
 ]]
 })
 
-local Chapter2 = uTab:CreateParagraph({
+uTab:Paragraph({
     Title = "📗 Book 1 | Chapter 2",
-    Content = [[
+    Desc = [[
 ✅ Added Auto Complete
 👾 Added ESP Monster
 📦 Added ESP Item
 ]]
 })
 
-local Chapter3 = uTab:CreateParagraph({
+uTab:Paragraph({
     Title = "📙 Book 1 | Chapter 3",
-    Content = [[
+    Desc = [[
 ✅ Added Auto Complete
 👾 Added ESP Monster
 📦 Added ESP Item
 ]]
 })
 
-local Chapter4 = uTab:CreateParagraph({
+uTab:Paragraph({
     Title = "📕 Book 1 | Chapter 4",
-    Content = [[
+    Desc = [[
 ✅ Added Auto Complete
 👾 Added ESP Monster
 📦 Added ESP Item
 ]]
 })
 
-local Chapter4 = uTab:CreateParagraph({
+uTab:Paragraph({
     Title = "📔 Book 1 | Final",
-    Content = [[
+    Desc = [[
 ✅ Added Auto Complete
 👾 Added ESP Monster
 📦 Added ESP Item
 ]]
 })
 
--- ==========================================
 -- BOOK 2
--- ==========================================
 
-local Book2Chapter1 = uTab:CreateParagraph({
+uTab:Paragraph({
     Title = "📖 Book 2 | Chapter 1",
-    Content = [[
+    Desc = [[
 ✅ Added Auto Complete
 👾 Added ESP Monster
 📦 Added ESP Item
 ]]
 })
 
-local mTab = Window:CreateTab("Main", "align-justify")
+-- =========================================================
+-- MAIN TAB
+-- =========================================================
 
-local lighting = game:GetService("Lighting")
-
-local OriginalLighting = {
-    Ambient = lighting.Ambient,
-    Brightness = lighting.Brightness,
-    GlobalShadows = lighting.GlobalShadows,
-    OutdoorAmbient = lighting.OutdoorAmbient
-}
+local mTab = Window:Tab({
+    Title = "Main",
+    Icon = "align-justify",
+})
 
 local lighting = game:GetService("Lighting")
 
@@ -850,14 +909,21 @@ pcall(function()
     end
 end)
 
-local Section = mTab:CreateSection("Noclip")
+-- ---------------------------------------------------------
+-- Noclip
+-- ---------------------------------------------------------
 
-local NoclipToggle = mTab:CreateToggle({
-    Name = "Noclip",
-    CurrentValue = false,
+local NoclipSection = mTab:Section({
+    Title = "Noclip",
+    Opened = true,
+})
+
+Register("NoclipToggle", NoclipSection:Toggle({
+    Title = "Noclip",
+    Value = false,
     Flag = "NoclipToggle",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
 
         NoclipEnabled = Value
 
@@ -867,32 +933,42 @@ local NoclipToggle = mTab:CreateToggle({
             StopNoclip()
         end
 
-    end,
+    end),
+}))
+
+-- ---------------------------------------------------------
+-- Fly
+-- ---------------------------------------------------------
+
+local FlySection = mTab:Section({
+    Title = "Fly",
+    Opened = true,
 })
 
-local Section = mTab:CreateSection("Fly")
-
-local FlySpeedSlider = mTab:CreateSlider({
-    Name = "Fly Speed",
-    Range = {1, 20},
-    Increment = 1,
-    Suffix = "Speed",
-    CurrentValue = 1,
+Register("FlySpeedSlider", FlySection:Slider({
+    Title = "Fly Speed",
+    Step = 1,
+    Value = {
+        Min = 1,
+        Max = 20,
+        Default = 1,
+    },
     Flag = "FlySpeedSlider",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
 
         FlySpeedValue = Value
 
-    end,
-})
+    end),
+}))
 
-local FlyToggle = mTab:CreateToggle({
-    Name = "Fly",
-    CurrentValue = false,
+Register("FlyToggle", FlySection:Toggle({
+    Title = "Fly",
+    Desc = "W A S D = Move  |  Q = Down  |  E = Up",
+    Value = false,
     Flag = "FlyToggle",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
 
         FlyEnabled = Value
 
@@ -902,17 +978,24 @@ local FlyToggle = mTab:CreateToggle({
             StopFly()
         end
 
-    end,
+    end),
+}))
+
+-- ---------------------------------------------------------
+-- Lighting
+-- ---------------------------------------------------------
+
+local LightingSection = mTab:Section({
+    Title = "Lighting",
+    Opened = true,
 })
 
-local Section = mTab:CreateSection("Lighting")
-
-local Toggle = mTab:CreateToggle({
-    Name = "Fulbright",
-    CurrentValue = false,
+Register("FulbrightToggle", LightingSection:Toggle({
+    Title = "Fulbright",
+    Value = false,
     Flag = "FulbrightToggle",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
         pcall(function()
 
             if Value then
@@ -954,20 +1037,29 @@ local Toggle = mTab:CreateToggle({
             end
 
         end)
-    end,
+    end),
+}))
+
+-- ---------------------------------------------------------
+-- Walk Speed
+-- ---------------------------------------------------------
+
+local WalkSpeedSection = mTab:Section({
+    Title = "Walk Speed",
+    Opened = true,
 })
 
-local Section = mTab:CreateSection("Walk Speed")
-
-local WalkSpeedSlider = mTab:CreateSlider({
-    Name = "Walk Speed",
-    Range = {16, 100},
-    Increment = 1,
-    Suffix = "Speed",
-    CurrentValue = 16,
+Register("WalkSpeedSlider", WalkSpeedSection:Slider({
+    Title = "Walk Speed",
+    Step = 1,
+    Value = {
+        Min = 16,
+        Max = 100,
+        Default = 16,
+    },
     Flag = "WalkSpeedSlider",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
 
         WalkSpeedValue = Value
 
@@ -975,20 +1067,15 @@ local WalkSpeedSlider = mTab:CreateSlider({
             Humanoid.WalkSpeed = Value
         end
 
-    end,
-})
+    end),
+}))
 
-
--- ========================================
--- Walk Speed Toggle
--- ========================================
-
-local WalkSpeedToggle = mTab:CreateToggle({
-    Name = "Enable Walk Speed",
-    CurrentValue = false,
+Register("WalkSpeedToggle", WalkSpeedSection:Toggle({
+    Title = "Enable Walk Speed",
+    Value = false,
     Flag = "WalkSpeedToggle",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
 
         WalkSpeedEnabled = Value
 
@@ -1006,24 +1093,29 @@ local WalkSpeedToggle = mTab:CreateToggle({
 
         end
 
-    end,
+    end),
+}))
+
+-- ---------------------------------------------------------
+-- Jump Power
+-- ---------------------------------------------------------
+
+local JumpPowerSection = mTab:Section({
+    Title = "Jump Power",
+    Opened = true,
 })
 
-local Section = mTab:CreateSection("Jump Power")
-
--- ========================================
--- Jump Power Slider
--- ========================================
-
-local JumpPowerSlider = mTab:CreateSlider({
-    Name = "Jump Power",
-    Range = {50, 200},
-    Increment = 1,
-    Suffix = "Power",
-    CurrentValue = 50,
+Register("JumpPowerSlider", JumpPowerSection:Slider({
+    Title = "Jump Power",
+    Step = 1,
+    Value = {
+        Min = 50,
+        Max = 200,
+        Default = 50,
+    },
     Flag = "JumpPowerSlider",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
 
         JumpPowerValue = Value
 
@@ -1037,20 +1129,15 @@ local JumpPowerSlider = mTab:CreateSlider({
 
         end
 
-    end,
-})
+    end),
+}))
 
-
--- ========================================
--- Jump Power Toggle
--- ========================================
-
-local JumpPowerToggle = mTab:CreateToggle({
-    Name = "Enable Jump Power",
-    CurrentValue = false,
+Register("JumpPowerToggle", JumpPowerSection:Toggle({
+    Title = "Enable Jump Power",
+    Value = false,
     Flag = "JumpPowerToggle",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
 
         JumpPowerEnabled = Value
 
@@ -1078,39 +1165,39 @@ local JumpPowerToggle = mTab:CreateToggle({
 
         end
 
-    end,
+    end),
+}))
+
+-- ---------------------------------------------------------
+-- TPWalk
+-- ---------------------------------------------------------
+
+local TPWalkSection = mTab:Section({
+    Title = "TPWalk",
+    Opened = true,
 })
 
-local Section = mTab:CreateSection("TPWalk")
-
--- ========================================
--- TPWalk Slider
--- ========================================
-
-local TPWalkSlider = mTab:CreateSlider({
-    Name = "TPWalk Speed",
-    Range = {1, 20},
-    Increment = 1,
-    Suffix = "Speed",
-    CurrentValue = 1,
+Register("TPWalkSpeedSlider", TPWalkSection:Slider({
+    Title = "TPWalk Speed",
+    Step = 1,
+    Value = {
+        Min = 1,
+        Max = 20,
+        Default = 1,
+    },
     Flag = "TPWalkSpeedSlider",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
         TPWalkSpeed = Value
-    end,
-})
+    end),
+}))
 
-
--- ========================================
--- TPWalk Toggle
--- ========================================
-
-local TPWalkToggle = mTab:CreateToggle({
-    Name = "Enable TPWalk",
-    CurrentValue = false,
+Register("TPWalkToggle", TPWalkSection:Toggle({
+    Title = "Enable TPWalk",
+    Value = false,
     Flag = "TPWalkToggle",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
 
         TPWalkEnabled = Value
 
@@ -1120,21 +1207,24 @@ local TPWalkToggle = mTab:CreateToggle({
             StopTPWalk()
         end
 
-    end,
+    end),
+}))
+
+-- ---------------------------------------------------------
+-- Float
+-- ---------------------------------------------------------
+
+local FloatSection = mTab:Section({
+    Title = "Float",
+    Opened = true,
 })
 
-local Section = mTab:CreateSection("Float")
-
--- ========================================
--- Float Toggle
--- ========================================
-
-local FloatToggle = mTab:CreateToggle({
-    Name = "Float",
-    CurrentValue = false,
+Register("FloatToggle", FloatSection:Toggle({
+    Title = "Float",
+    Value = false,
     Flag = "FloatToggle",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
 
         if Value then
             FloatEnabled = true
@@ -1143,21 +1233,24 @@ local FloatToggle = mTab:CreateToggle({
             StopFloat()
         end
 
-    end,
+    end),
+}))
+
+-- ---------------------------------------------------------
+-- Instant Proximity Prompt
+-- ---------------------------------------------------------
+
+local PromptSection = mTab:Section({
+    Title = "Instant Proximity Prompt",
+    Opened = true,
 })
 
-local Section = mTab:CreateSection("Instant Proximity Prompt")
-
--- ========================================
--- Instant Proximity Prompt Toggle
--- ========================================
-
-local InstantPromptToggle = mTab:CreateToggle({
-    Name = "Instant Proximity Prompt",
-    CurrentValue = false,
+Register("InstantProximityPrompt", PromptSection:Toggle({
+    Title = "Instant Proximity Prompt",
+    Value = false,
     Flag = "InstantProximityPrompt",
 
-    Callback = function(Value)
+    Callback = Cb(function(Value)
 
         InstantPromptEnabled = Value
 
@@ -1167,11 +1260,322 @@ local InstantPromptToggle = mTab:CreateToggle({
             StopInstantProximity()
         end
 
-    end,
+    end),
+}))
+
+-- =========================================================
+-- COMPATIBILITY LAYER (Rayfield API -> WindUI)
+-- ให้สคริปต์ภายนอก (load all book 1-2) ที่เรียก
+-- getgenv().FackWindowm:CreateTab(...) ยังใช้งานได้เหมือนเดิม
+-- =========================================================
+
+local function WrapElement(Element)
+
+    local Wrapper = {}
+
+    function Wrapper:Set(Value)
+        pcall(function()
+            if Element.Set then
+                Element:Set(Value)
+            elseif Element.Select then
+                Element:Select(Value)
+            end
+        end)
+    end
+
+    function Wrapper:Refresh(...)
+        pcall(Element.Refresh, Element, ...)
+    end
+
+    function Wrapper:Destroy()
+        pcall(function()
+            Element:Destroy()
+        end)
+    end
+
+    Wrapper.Element = Element
+
+    return setmetatable(Wrapper, {
+        __index = function(_, Key)
+            local Value = Element and Element[Key]
+
+            if type(Value) == "function" then
+                return function(_, ...)
+                    return Value(Element, ...)
+                end
+            end
+
+            return Value
+        end
+    })
+end
+
+local function MakeTabAdapter(WindTab)
+
+    local Adapter = {}
+    local Container = WindTab
+
+    function Adapter:CreateSection(Name)
+
+        local Ok, Section = pcall(function()
+            return WindTab:Section({
+                Title = tostring(Name),
+                Opened = true,
+            })
+        end)
+
+        if Ok and Section then
+            Container = Section
+        end
+
+        return {
+            Set = function(_, NewName)
+                pcall(function()
+                    Section:SetTitle(tostring(NewName))
+                end)
+            end
+        }
+    end
+
+    function Adapter:CreateDivider()
+        pcall(function()
+            Container:Divider()
+        end)
+    end
+
+    function Adapter:CreateLabel(Text)
+
+        local Element = Container:Paragraph({
+            Title = tostring(type(Text) == "table" and Text.Name or Text),
+        })
+
+        return WrapElement(Element)
+    end
+
+    function Adapter:CreateParagraph(Options)
+
+        local Element = Container:Paragraph({
+            Title = tostring(Options.Title or ""),
+            Desc = tostring(Options.Content or ""),
+        })
+
+        return WrapElement(Element)
+    end
+
+    function Adapter:CreateButton(Options)
+
+        local Element = Container:Button({
+            Title = tostring(Options.Name or "Button"),
+            Callback = function()
+                local Ok, Err = pcall(Options.Callback or function() end)
+
+                if not Ok then
+                    warn("[Fack HUB] Button Error:", tostring(Err))
+                end
+            end,
+        })
+
+        return WrapElement(Element)
+    end
+
+    function Adapter:CreateToggle(Options)
+
+        local Element = Container:Toggle({
+            Title = tostring(Options.Name or "Toggle"),
+            Value = Options.CurrentValue == true,
+            Flag = Options.Flag,
+            Callback = Cb(Options.Callback or function() end),
+        })
+
+        if Options.Flag then
+            Register(Options.Flag, Element)
+        end
+
+        return WrapElement(Element)
+    end
+
+    function Adapter:CreateSlider(Options)
+
+        local Range = Options.Range or {0, 100}
+
+        local Element = Container:Slider({
+            Title = tostring(Options.Name or "Slider"),
+            Step = Options.Increment or 1,
+            Value = {
+                Min = Range[1],
+                Max = Range[2],
+                Default = Options.CurrentValue or Range[1],
+            },
+            Flag = Options.Flag,
+            Callback = Cb(Options.Callback or function() end),
+        })
+
+        if Options.Flag then
+            Register(Options.Flag, Element)
+        end
+
+        return WrapElement(Element)
+    end
+
+    function Adapter:CreateDropdown(Options)
+
+        local Multi = Options.MultipleOptions == true
+        local Current = Options.CurrentOption or {}
+
+        if type(Current) ~= "table" then
+            Current = {Current}
+        end
+
+        local UserCallback = Options.Callback or function() end
+
+        local Element = Container:Dropdown({
+            Title = tostring(Options.Name or "Dropdown"),
+            Values = Options.Options or {},
+            Value = Multi and Current or Current[1],
+            Multi = Multi,
+            AllowNone = true,
+            Flag = Options.Flag,
+            Callback = Cb(function(Option)
+
+                -- Rayfield ส่งเป็น table เสมอ
+                if type(Option) ~= "table" then
+                    Option = {Option}
+                end
+
+                UserCallback(Option)
+
+            end),
+        })
+
+        if Options.Flag then
+            Register(Options.Flag, Element)
+        end
+
+        return WrapElement(Element)
+    end
+
+    function Adapter:CreateInput(Options)
+
+        local Element = Container:Input({
+            Title = tostring(Options.Name or "Input"),
+            Value = tostring(Options.CurrentValue or ""),
+            Placeholder = tostring(Options.PlaceholderText or ""),
+            Flag = Options.Flag,
+            Callback = Cb(Options.Callback or function() end),
+        })
+
+        if Options.Flag then
+            Register(Options.Flag, Element)
+        end
+
+        return WrapElement(Element)
+    end
+
+    function Adapter:CreateKeybind(Options)
+
+        local Element = Container:Keybind({
+            Title = tostring(Options.Name or "Keybind"),
+            Value = Options.CurrentKeybind or "E",
+            Flag = Options.Flag,
+            Callback = Cb(Options.Callback or function() end),
+        })
+
+        if Options.Flag then
+            Register(Options.Flag, Element)
+        end
+
+        return WrapElement(Element)
+    end
+
+    function Adapter:CreateColorPicker(Options)
+
+        local Element = Container:Colorpicker({
+            Title = tostring(Options.Name or "Color"),
+            Default = Options.Color or Color3.fromRGB(255, 255, 255),
+            Flag = Options.Flag,
+            Callback = Cb(Options.Callback or function() end),
+        })
+
+        if Options.Flag then
+            Register(Options.Flag, Element)
+        end
+
+        return WrapElement(Element)
+    end
+
+    -- ให้เรียกคำสั่ง WindUI ตรง ๆ ได้ด้วย
+    return setmetatable(Adapter, {
+        __index = function(_, Key)
+            local Value = WindTab[Key]
+
+            if type(Value) == "function" then
+                return function(_, ...)
+                    return Value(WindTab, ...)
+                end
+            end
+
+            return Value
+        end
+    })
+end
+
+local CompatWindow = {}
+
+function CompatWindow:CreateTab(Name, Icon)
+
+    local WindTab = Window:Tab({
+        Title = tostring(Name),
+        Icon = Icon,
+    })
+
+    return MakeTabAdapter(WindTab)
+end
+
+function CompatWindow:ModifyTheme(ThemeName)
+    pcall(function()
+        WindUI:SetTheme(ThemeName)
+    end)
+end
+
+setmetatable(CompatWindow, {
+    __index = function(_, Key)
+        local Value = Window[Key]
+
+        if type(Value) == "function" then
+            return function(_, ...)
+                return Value(Window, ...)
+            end
+        end
+
+        return Value
+    end
 })
 
+-- Rayfield-style object สำหรับสคริปต์ภายนอก
+local RayfieldCompat = {
+    Flags = {},
+}
+
+function RayfieldCompat:Notify(Options)
+    Notify(
+        Options.Title or "Fack HUB",
+        Options.Content or "",
+        Options.Duration or 5
+    )
+end
+
+pcall(function()
+    getgenv().FackWindowm = CompatWindow
+    getgenv().FackWindow = Window
+    getgenv().FackWindUI = WindUI
+    getgenv().FackRayfield = RayfieldCompat
+end)
+
+-- =========================================================
+-- LOAD BOOK SCRIPT
+-- =========================================================
+
 if game.GameId == 3417807086 then
-    getgenv().FackWindowm = Window
 
     local Success, Error = pcall(function()
         local Source = game:HttpGet(
@@ -1197,18 +1601,57 @@ end
 -- SETTING TAB
 -- =========================================================
 
-local settingTab = Window:CreateTab("Setting", "settings")
+local settingTab = Window:Tab({
+    Title = "Setting",
+    Icon = "settings",
+})
 
 -- =========================================================
 -- THEME
 -- =========================================================
 
-settingTab:CreateSection("Theme")
+local ThemeSection = settingTab:Section({
+    Title = "Theme",
+    Opened = true,
+})
 
-local ThemeDropdown = settingTab:CreateDropdown({
-    Name = "Theme",
+-- แปลงชื่อธีมเดิมของ Rayfield -> ธีมของ WindUI
+local ThemeMap = {
+    Default   = "Dark",
+    AmberGlow = "Amber",
+    Amethyst  = "Violet",
+    Bloom     = "Rose",
+    DarkBlue  = "Midnight",
+    Green     = "Emerald",
+    Light     = "Light",
+    Ocean     = "Sky",
+    Serenity  = "Plant",
+}
 
-    Options = {
+local function ApplyTheme(Name)
+
+    local Target = ThemeMap[Name] or Name
+
+    local Applied = pcall(function()
+        local Themes = WindUI:GetThemes()
+
+        if type(Themes) == "table" and Themes[Target] == nil then
+            error("theme not found")
+        end
+
+        WindUI:SetTheme(Target)
+    end)
+
+    if not Applied then
+        pcall(function()
+            WindUI:SetTheme("Dark")
+        end)
+    end
+end
+
+Register("SettingTheme", ThemeSection:Dropdown({
+    Title = "Theme",
+    Values = {
         "Default",
         "AmberGlow",
         "Amethyst",
@@ -1219,30 +1662,35 @@ local ThemeDropdown = settingTab:CreateDropdown({
         "Ocean",
         "Serenity"
     },
-
-    CurrentOption = {"Default"},
-    MultipleOptions = false,
+    Value = "Default",
+    Multi = false,
+    AllowNone = false,
     Flag = "SettingTheme",
 
-    Callback = function(Options)
-        local ThemeName = Options[1]
+    Callback = Cb(function(Option)
+
+        local ThemeName = Option
+
+        if type(Option) == "table" then
+            ThemeName = Option[1]
+        end
 
         if not ThemeName then
             return
         end
 
-        pcall(function()
-            Window.ModifyTheme(ThemeName)
-        end)
-    end
-})
-
+        ApplyTheme(ThemeName)
+    end),
+}))
 
 -- =========================================================
 -- REPORT BUG | FACK HUB
 -- =========================================================
 
-settingTab:CreateSection("🐛 Report Bug")
+local BugSection = settingTab:Section({
+    Title = "🐛 Report Bug",
+    Opened = true,
+})
 
 local BugDescription = ""
 local IsSendingBugReport = false
@@ -1254,11 +1702,11 @@ local BugWebhookURL = "https://discord.com/api/webhooks/1557395558740787331/Yerh
 -- BUG DESCRIPTION INPUT
 -- =========================================================
 
-local BugInput = settingTab:CreateInput({
-    Name = "Bug Description",
-    CurrentValue = "",
-    PlaceholderText = "Describe the bug...",
-    RemoveTextAfterFocusLost = false,
+local BugInput = BugSection:Input({
+    Title = "Bug Description",
+    Value = "",
+    Type = "Textarea",
+    Placeholder = "Describe the bug...",
 
     Callback = function(Text)
         BugDescription = tostring(Text or "")
@@ -1307,11 +1755,7 @@ end
 -- =========================================================
 
 local function NotifyBugReport(Content, Duration)
-    Rayfield:Notify({
-        Title = "Fack HUB | Report Bug",
-        Content = Content,
-        Duration = Duration or 5
-    })
+    Notify("Fack HUB | Report Bug", Content, Duration or 5)
 end
 
 -- Truncate text safely for UTF-8
@@ -1335,8 +1779,8 @@ end
 -- REPORT BUG BUTTON
 -- =========================================================
 
-local ReportBugButton = settingTab:CreateButton({
-    Name = "🐛 Submit Bug Report",
+local ReportBugButton = BugSection:Button({
+    Title = "🐛 Submit Bug Report",
 
     Callback = function()
 
@@ -1434,92 +1878,92 @@ local ReportBugButton = settingTab:CreateButton({
         end
 
         -- =========================================================
--- FACK HUB | BEAUTIFUL BUG REPORT EMBED
--- =========================================================
+        -- FACK HUB | BEAUTIFUL BUG REPORT EMBED
+        -- =========================================================
 
-local Data = {
-    username = "Fack HUB | Bug Reporter",
+        local Data = {
+            username = "Fack HUB | Bug Reporter",
 
-    allowed_mentions = {
-        parse = {}
-    },
-
-    embeds = {{
-        -- HEADER
-        author = {
-            name = "FACK HUB  •  BUG REPORT SYSTEM"
-        },
-
-        title = "🐛  New Bug Report",
-
-        description =
-            "A new bug report has been submitted.\n\n"
-            .. "📝 **Bug Description**\n"
-            .. "```text\n"
-            .. Description
-            .. "\n```",
-
-        color = 0xFF4757,
-
-        -- INFORMATION
-        fields = {
-            {
-                name = "👤  PLAYER INFORMATION",
-                value =
-                    "**Username**\n"
-                    .. "`" .. tostring(LocalPlayer.Name) .. "`\n\n"
-                    .. "**Display Name**\n"
-                    .. tostring(LocalPlayer.DisplayName) .. "\n\n"
-                    .. "**User ID**\n"
-                    .. "`" .. tostring(LocalPlayer.UserId) .. "`",
-                inline = true
+            allowed_mentions = {
+                parse = {}
             },
 
-            {
-                name = "🎮  GAME INFORMATION",
-                value =
-                    "**Game Name**\n"
-                    .. tostring(GameName) .. "\n\n"
-                    .. "**Player Count**\n"
-                    .. "👥 `" .. tostring(PlayerCount) .. "`\n\n"
-                    .. "**Script Version**\n"
-                    .. "`" .. tostring(ScriptVersion) .. "`",
-                inline = true
-            },
+            embeds = {{
+                -- HEADER
+                author = {
+                    name = "FACK HUB  •  BUG REPORT SYSTEM"
+                },
 
-            {
-                name = "🗺️  GAME IDENTIFIERS",
-                value =
-                    "**Place ID**\n"
-                    .. "`" .. tostring(game.PlaceId) .. "`\n\n"
-                    .. "**Game ID**\n"
-                    .. "`" .. tostring(game.GameId) .. "`",
-                inline = false
-            },
+                title = "🐛  New Bug Report",
 
-            {
-                name = "🌐  SERVER INFORMATION",
-                value =
-                    "**Job ID**\n"
+                description =
+                    "A new bug report has been submitted.\n\n"
+                    .. "📝 **Bug Description**\n"
                     .. "```text\n"
-                    .. tostring(CurrentJobId)
-                    .. "\n```\n"
-                    .. "**Join Job ID Code**\n"
-                    .. "```lua\n"
-                    .. JoinJobCode
+                    .. Description
                     .. "\n```",
-                inline = false
-            }
-        },
 
-        -- FOOTER
-        footer = {
-            text = "Fack HUB  •  Bug Reporter"
-        },
+                color = 0xFF4757,
 
-        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
-    }}
-}
+                -- INFORMATION
+                fields = {
+                    {
+                        name = "👤  PLAYER INFORMATION",
+                        value =
+                            "**Username**\n"
+                            .. "`" .. tostring(LocalPlayer.Name) .. "`\n\n"
+                            .. "**Display Name**\n"
+                            .. tostring(LocalPlayer.DisplayName) .. "\n\n"
+                            .. "**User ID**\n"
+                            .. "`" .. tostring(LocalPlayer.UserId) .. "`",
+                        inline = true
+                    },
+
+                    {
+                        name = "🎮  GAME INFORMATION",
+                        value =
+                            "**Game Name**\n"
+                            .. tostring(GameName) .. "\n\n"
+                            .. "**Player Count**\n"
+                            .. "👥 `" .. tostring(PlayerCount) .. "`\n\n"
+                            .. "**Script Version**\n"
+                            .. "`" .. tostring(ScriptVersion) .. "`",
+                        inline = true
+                    },
+
+                    {
+                        name = "🗺️  GAME IDENTIFIERS",
+                        value =
+                            "**Place ID**\n"
+                            .. "`" .. tostring(game.PlaceId) .. "`\n\n"
+                            .. "**Game ID**\n"
+                            .. "`" .. tostring(game.GameId) .. "`",
+                        inline = false
+                    },
+
+                    {
+                        name = "🌐  SERVER INFORMATION",
+                        value =
+                            "**Job ID**\n"
+                            .. "```text\n"
+                            .. tostring(CurrentJobId)
+                            .. "\n```\n"
+                            .. "**Join Job ID Code**\n"
+                            .. "```lua\n"
+                            .. JoinJobCode
+                            .. "\n```",
+                        inline = false
+                    }
+                },
+
+                -- FOOTER
+                footer = {
+                    text = "Fack HUB  •  Bug Reporter"
+                },
+
+                timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+            }}
+        }
 
         -- =================================================
         -- ENCODE JSON
@@ -1602,7 +2046,9 @@ local Data = {
             NotifyBugReport("Bug report sent successfully!", 4)
 
             BugDescription = ""
-            BugInput:Set("")
+            pcall(function()
+                BugInput:Set("")
+            end)
 
         -- =================================================
         -- FAILED
@@ -1823,4 +2269,21 @@ task.spawn(function()
     SendExecuteLog()
 end)
 
-Rayfield:LoadConfiguration()
+-- =========================================================
+-- LOAD CONFIGURATION (แทน Rayfield:LoadConfiguration)
+-- =========================================================
+
+task.spawn(function()
+
+    task.wait(0.5)
+
+    pcall(function()
+        MainConfig:Load()
+    end)
+
+    -- รอให้ callback ตอนโหลดค่าเสร็จก่อน ค่อยเปิดระบบ auto save
+    task.wait(1.5)
+    ConfigReady = true
+
+    Notify("Fack HUB", "Loaded successfully! Press K to toggle the UI.", 5)
+end)
