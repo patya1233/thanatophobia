@@ -1,5 +1,5 @@
 local env = getgenv()
-local WindUI = env.FackWindUI
+local Window = env.FackWindUI
 
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
