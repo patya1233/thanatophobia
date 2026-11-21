@@ -73,30 +73,30 @@ local v6 = {
 
 if table.find(v2, game.PlaceId) then
     getgenv().FackWindowb1c1 = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%201"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%201.txt"))()
 end
 
 if table.find(v3, game.PlaceId) then
     getgenv().FackWindowb1c2 = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%202"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%202.txt"))()
 end
 
 if table.find(v4, game.PlaceId) then
     getgenv().FackWindowb1c3 = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%203"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%203.txt"))()
 end
 
 if table.find(v5, game.PlaceId) then
     getgenv().FackWindowb1c4 = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%204"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%201%20Chapter%204.txt"))()
 end
 
 if table.find(v6, game.PlaceId) then
     getgenv().FackWindowb1fi = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Final"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Final.txt"))()
 end
 
 if table.find(v1, game.PlaceId) then
     getgenv().FackWindowb2c1 = Window
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%202%20Chapter%201"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/patya1233/thanatophobia/refs/heads/main/main%20book/Book%202%20Chapter%201.txt"))()
 end
