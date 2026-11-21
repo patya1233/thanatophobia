@@ -783,7 +783,7 @@ local uTab = Window:Tab({
 
 uTab:Paragraph({
     Title = "📜 Update Log",
-    Desc = "Version 1.0 • Latest Features"
+    Desc = "Version 1.1 • Latest Features"
 })
 
 uTab:Paragraph({
@@ -796,89 +796,33 @@ uTab:Paragraph({
 })
 
 uTab:Paragraph({
-    Title = "🚀 Update 1.0",
+    Title = "🚀 Update 1.1",
     Desc = [[
 💡 New Features
 
-🌙 Fulbright
-• Added Fulbright
-• Improved visibility in dark areas
-
-🏃 Movement
-• Added Walk Speed
-• Added Jump Power
-• Added TPWalk
-• Added Float
-• Added Fly
-• Added Noclip
-
-👾 ESP
-• Added ESP Monster
-• Added ESP Item
-
-⚙️ Settings
-• Added Theme selection
-• Added Report Bug system
-• Added Bug Description input
-]]
-})
-
--- BOOK 1
-
-uTab:Paragraph({
-    Title = "📘 Book 1 | Chapter 1",
-    Desc = [[
-✅ Added Auto Complete
-👾 Added ESP Monster
-📦 Added ESP Item
-]]
-})
-
-uTab:Paragraph({
-    Title = "📗 Book 1 | Chapter 2",
-    Desc = [[
-✅ Added Auto Complete
-👾 Added ESP Monster
-📦 Added ESP Item
-]]
-})
-
-uTab:Paragraph({
-    Title = "📙 Book 1 | Chapter 3",
-    Desc = [[
-✅ Added Auto Complete
-👾 Added ESP Monster
-📦 Added ESP Item
-]]
-})
-
-uTab:Paragraph({
-    Title = "📕 Book 1 | Chapter 4",
-    Desc = [[
-✅ Added Auto Complete
-👾 Added ESP Monster
-📦 Added ESP Item
-]]
-})
-
 uTab:Paragraph({
     Title = "📔 Book 1 | Final",
-    Desc = [[
-✅ Added Auto Complete
-👾 Added ESP Monster
-📦 Added ESP Item
-]]
-})
-
--- BOOK 2
-
-uTab:Paragraph({
-    Title = "📖 Book 2 | Chapter 1",
-    Desc = [[
-✅ Added Auto Complete
-👾 Added ESP Monster
-📦 Added ESP Item
-]]
+Desc = [[
+    👑 [Part 1 - LordEmperorSaito]
+    ✅ Added Auto Spawn Boss & Auto Burn Cursed
+    📦 Added ESP Torch & Cursed
+    👾 Added ESP Monster
+    
+    💀 [Part 2 - DistortedSaito]
+    ✅ Added Auto Win (All 6 Puzzles + Auto Exit Door)
+    🧩 Added Individual Auto Puzzles (Notes, PowerBox, Wires, Painting, 3x3, 3 Pillars)
+    🛡️ Added Auto SkillCheck Bypass, Auto Calm Down & Auto SafeZone TP
+    ⚡ Added Infinite Stamina & Anti-Jumpscare / Fear Blur
+    📦 Added ESP Notes, All Puzzles, SafeZones & EscapeDoor
+    
+    ⚔️ [Part 3 - Saito Finale Boss]
+    🔥 Added Auto Farm Boss Phase 1 & Phase 2 (Auto Dodge & Auto Punish Downed Boss)
+    🎯 Added Kill Aura (Katana) & WhiteFlameTorch Aimbot
+    🛡️ Added Smart Auto Block / Parry, Auto Shockwave Bypass & Anti-Obsession
+    💎 Added Auto Consume Purebloom Crystals & Infinite Dash (Q)
+    🎬 Added Quick Ending Selector (Escape / Kill Saito)
+    👾 Added Real-time ESP Boss, Purebloom Crystals & Boss Attacks
+    ]]
 })
 
 -- =========================================================
