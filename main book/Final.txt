@@ -218,13 +218,13 @@ local function DestroyTouchTransmitters(container)
 end
 
 -- ==========================================
--- ฟังก์ชันแก้ปริศนาของ Part 2 (DistortedSaito)
+-- ฟังก์ชันแก้ปริศนาของ Part 2 (DistortedSaito) - การันตี 100%
 -- ==========================================
 local function EnsureCheckpointTriggered()
     local cp = workspace:FindFirstChild("Checkpoints") and workspace.Checkpoints:FindFirstChild("Checkpoint")
     if cp and hrp then
         TeleportTo(cp)
-        task.wait(0.25)
+        task.wait(0.3)
         if firetouchinterest then
             firetouchinterest(hrp, cp, 0)
             task.wait(0.05)
@@ -253,44 +253,55 @@ end
 
 local function SolveNotes()
     local notes = workspace:FindFirstChild("MainPuzzle") and workspace.MainPuzzle:FindFirstChild("Notes")
-    if not notes then return end
-    for _, v in ipairs(notes:GetChildren()) do
-        local pp = v:FindFirstChildWhichIsA("ProximityPrompt", true)
-        if pp and pp.Enabled then
-            TeleportTo(v)
-            task.wait(0.22)
-            InteractPrompt(pp, 0)
+    local obj = workspace:FindFirstChild("MainPuzzle") and workspace.MainPuzzle.Objectives:FindFirstChild("Notes")
+    if not notes or not obj then return end
+    local req = obj:GetAttribute("Required") or 10
+
+    for _ = 1, 3 do
+        if obj.Value >= req then break end
+        for _, v in ipairs(notes:GetChildren()) do
+            if obj.Value >= req then break end
+            local pp = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+            if pp and pp.Enabled then
+                TeleportTo(v)
+                task.wait(0.3)
+                InteractPrompt(pp, 0)
+                task.wait(0.1)
+            end
         end
     end
 end
 
 local function SolvePowerBox()
     local obj = workspace:FindFirstChild("MainPuzzle") and workspace.MainPuzzle.Objectives:FindFirstChild("PowerBox")
-    if obj and obj.Value then return end
+    if not obj or obj.Value then return end
     EnableSkillCheckBypass()
 
     local shed = workspace:FindFirstChild("MapDecor") and workspace.MapDecor.MemoryBuilds:FindFirstChild("Shed")
     if not shed then return end
 
-    if shed:FindFirstChild("ShojiDoor") and not shed.ShojiDoor.Opened.Value then
-        TeleportTo(shed.ShojiDoor.DoorFrame)
-        task.wait(0.2)
-        InteractPrompt(shed.ShojiDoor.DoorFrame, 0)
-        task.wait(0.25)
-    end
+    for _ = 1, 3 do
+        if obj.Value then break end
+        if shed:FindFirstChild("ShojiDoor") and not shed.ShojiDoor.Opened.Value then
+            TeleportTo(shed.ShojiDoor.DoorFrame)
+            task.wait(0.35)
+            InteractPrompt(shed.ShojiDoor.DoorFrame, 0)
+            task.wait(0.3)
+        end
 
-    local pb = shed:FindFirstChild("PowerBox")
-    if pb and pb:FindFirstChild("RootPos") then
-        TeleportTo(pb.RootPos)
-        task.wait(0.25)
-        InteractPrompt(pb.PromptAttach, 0)
-        task.wait(0.5)
+        local pb = shed:FindFirstChild("PowerBox")
+        if pb and pb:FindFirstChild("RootPos") then
+            TeleportTo(pb.RootPos)
+            task.wait(0.35)
+            InteractPrompt(pb.PromptAttach, 0)
+            task.wait(0.8)
+        end
     end
 end
 
 local function SolveWires()
     local obj = workspace:FindFirstChild("MainPuzzle") and workspace.MainPuzzle.Objectives:FindFirstChild("Wires")
-    if obj and obj.Value then return end
+    if not obj or obj.Value then return end
 
     local wc = workspace:FindFirstChild("MapDecor")
         and workspace.MapDecor.MemoryBuilds:FindFirstChild("MinerHut")
@@ -306,53 +317,57 @@ local function SolveWires()
     local pts = { w1.Position * 2 - cList[1].Position }
     for _, c in ipairs(cList) do table.insert(pts, c.Position) end
 
-    for i = 1, 11 do
-        if obj and obj.Value then break end
-        local w = wc.Wires:FindFirstChild("Wire" .. i)
-        if w and pts[i] and pts[i + 1] then
-            local pA, pB = pts[i], pts[i + 1]
-            local angle = math.deg(math.atan2(pB.Y - pA.Y, Vector2.new(pB.X - pA.X, pB.Z - pA.Z).Magnitude))
-            local target = math.floor((angle / 10) + 0.5) * 10
+    for _ = 1, 2 do
+        if obj.Value then break end
+        for i = 1, 11 do
+            if obj.Value then break end
+            local w = wc.Wires:FindFirstChild("Wire" .. i)
+            if w and pts[i] and pts[i + 1] then
+                local pA, pB = pts[i], pts[i + 1]
+                local angle = math.deg(math.atan2(pB.Y - pA.Y, Vector2.new(pB.X - pA.X, pB.Z - pA.Z).Magnitude))
+                local target = math.floor((angle / 10) + 0.5) * 10
 
-            TeleportTo(w.CFrame + w.CFrame.LookVector * 3)
-            task.wait(0.2)
-            for _ = 1, 36 do
-                local cur = math.floor(w.Orientation.Z + 0.5)
-                local diff = math.abs((cur - target) % 180)
-                if diff <= 2 or diff >= 178 or (obj and obj.Value) then break end
-                InteractPrompt(w, 0)
-                task.wait(0.22)
+                TeleportTo(w.CFrame + w.CFrame.LookVector * 3)
+                task.wait(0.35)
+                for _ = 1, 36 do
+                    local cur = math.floor(w.Orientation.Z + 0.5)
+                    local diff = math.abs((cur - target) % 180)
+                    if diff <= 2 or diff >= 178 or obj.Value then break end
+                    InteractPrompt(w, 0)
+                    task.wait(0.22)
+                end
             end
         end
+        task.wait(0.4)
     end
 end
 
 local function SolvePainting()
     local obj = workspace:FindFirstChild("MainPuzzle") and workspace.MainPuzzle.Objectives:FindFirstChild("Painting")
-    if obj and obj.Value then return end
+    if not obj or obj.Value then return end
 
     local p3 = workspace:FindFirstChild("Paintings") and workspace.Paintings:FindFirstChild("Painting3")
     if not p3 or not p3:FindFirstChild("Part") then return end
 
-    TeleportTo(p3.Part.CFrame + p3.Part.CFrame.LookVector * 4)
-    task.wait(0.25)
-    for _, b in ipairs(p3:GetChildren()) do
-        if b.Name == "Button" then
-            InteractClick(b, 0.1)
+    for _ = 1, 3 do
+        if obj.Value then break end
+        TeleportTo(p3.Part.CFrame + p3.Part.CFrame.LookVector * 4)
+        task.wait(0.35)
+        for _, b in ipairs(p3:GetChildren()) do
+            if b.Name == "Button" then
+                InteractClick(b, 0.12)
+            end
         end
+        task.wait(0.4)
     end
 end
 
 local function SolveThreeXThree()
     local obj = workspace:FindFirstChild("MainPuzzle") and workspace.MainPuzzle.Objectives:FindFirstChild("ThreeXThree")
-    if obj and obj.Value then return end
+    if not obj or obj.Value then return end
 
     local tp = workspace:FindFirstChild("TilePuzzle")
     if not tp or not tp:FindFirstChild("MAIN") or not tp:FindFirstChild("Part") then return end
-
-    TeleportTo(tp.Part.CFrame + Vector3.new(0, 2.5, 0))
-    if firetouchinterest then firetouchinterest(hrp, tp.Part, 0) end
-    task.wait(0.4)
 
     local masks = {
         [1] = {1, 2, 4}, [2] = {1, 2, 3, 5}, [3] = {2, 3, 6},
@@ -360,39 +375,46 @@ local function SolveThreeXThree()
         [7] = {4, 7, 8}, [8] = {5, 7, 8, 9}, [9] = {6, 8, 9},
     }
 
-    local b = {}
-    for i = 1, 9 do
-        b[i] = (tostring(tp.MAIN["T" .. i].BrickColor) == "Shamrock") and 1 or 0
-    end
+    for _ = 1, 3 do
+        if obj.Value then break end
+        TeleportTo(tp.Part.CFrame + Vector3.new(0, 2.5, 0))
+        if firetouchinterest then firetouchinterest(hrp, tp.Part, 0) end
+        task.wait(0.45)
 
-    for mask = 0, 511 do
-        local sim = {table.unpack(b)}
-        local moves = {}
+        local b = {}
         for i = 1, 9 do
-            if bit32.band(mask, bit32.lshift(1, i - 1)) ~= 0 then
-                table.insert(moves, i)
-                for _, cell in ipairs(masks[i]) do
-                    sim[cell] = 1 - sim[cell]
+            b[i] = (tostring(tp.MAIN["T" .. i].BrickColor) == "Shamrock") and 1 or 0
+        end
+
+        for mask = 0, 511 do
+            local sim = {table.unpack(b)}
+            local moves = {}
+            for i = 1, 9 do
+                if bit32.band(mask, bit32.lshift(1, i - 1)) ~= 0 then
+                    table.insert(moves, i)
+                    for _, cell in ipairs(masks[i]) do
+                        sim[cell] = 1 - sim[cell]
+                    end
                 end
             end
-        end
-        local ok = true
-        for i = 1, 9 do
-            if sim[i] ~= 1 then ok = false; break end
-        end
-        if ok then
-            for _, m in ipairs(moves) do
-                TeleportTo(tp.Part.CFrame + Vector3.new(0, 2.5, 0))
-                InteractClick(tp.MAIN["T" .. m], 0.18)
+            local ok = true
+            for i = 1, 9 do
+                if sim[i] ~= 1 then ok = false; break end
             end
-            InteractClick(tp.MAIN.ENTER, 0.2)
-            task.wait(0.4)
-            break
+            if ok then
+                for _, m in ipairs(moves) do
+                    TeleportTo(tp.Part.CFrame + Vector3.new(0, 2.5, 0))
+                    InteractClick(tp.MAIN["T" .. m], 0.18)
+                end
+                InteractClick(tp.MAIN.ENTER, 0.25)
+                task.wait(0.5)
+                break
+            end
         end
     end
 end
 
--- [แก้ไขใหม่ 100%] วนลูปแก้เสา 3 ต้นจนกว่า Objectives.Pillars.Value == true ค่อยวาร์ปกลับ
+-- แก้ Simon Says 3 รอบต่อเนื่อง (3 จังหวะ -> 5 จังหวะ -> 7 จังหวะ)
 local function SolvePillars()
     local obj = workspace:FindFirstChild("MainPuzzle") and workspace.MainPuzzle.Objectives:FindFirstChild("Pillars")
     if not obj or obj.Value then return end
@@ -409,64 +431,61 @@ local function SolvePillars()
     local sub = ch3:FindFirstChild("Submit")
     if #pillars < 3 or not sub then return end
 
-    local function isAnyRed()
-        for _, p in ipairs(pillars) do
-            if tostring(p.LightTrigger.BrickColor) == "Really red" then
+    local function clickPillarVerified(pIdx)
+        local p = pillars[pIdx]
+        local lt = p.LightTrigger
+        local sp = lt.SelectPrompt
+
+        for _ = 1, 4 do
+            if obj.Value or not sp.Enabled then return false end
+            TeleportTo(lt.CFrame + Vector3.new(-3, 2, 0))
+            task.wait(0.35)
+            fireproximityprompt(sp)
+
+            local t0 = tick()
+            local flashed = false
+            while (tick() - t0 < 0.45) do
+                if tostring(lt.BrickColor) == "Really red" then
+                    flashed = true
+                    break
+                end
+                task.wait(0.02)
+            end
+
+            if flashed then
+                local t1 = tick()
+                while tostring(lt.BrickColor) == "Really red" and (tick() - t1 < 1.2) do
+                    task.wait(0.02)
+                end
+                task.wait(0.1)
                 return true
             end
         end
         return false
     end
 
-    local function waitAllBlack(timeout)
-        local t = tick()
-        repeat
-            task.wait(0.04)
-        until not isAnyRed() or (tick() - t > (timeout or 3))
-    end
+    local safety = 0
+    while not obj.Value and safety < 10 do
+        safety = safety + 1
 
-    -- วนทำจนกว่าภารกิจ Pillars จะสำเร็จ (สูงสุด 5 รอบกันค้าง)
-    for attempt = 1, 5 do
-        if obj.Value then break end
-
-        -- 1. ถ้าเสายังไม่เปิด SelectPrompt ให้กด Submit หรือรอจนกว่าจะพร้อม
-        if not pillars[1].LightTrigger.SelectPrompt.Enabled then
+        if not pillars[1].LightTrigger.SelectPrompt.Enabled and sub.ProximityPrompt.Enabled then
             TeleportTo(CFrame.new(sub.WorldPosition + Vector3.new(0, 3, 0)))
-            task.wait(0.25)
-            if sub.ProximityPrompt.Enabled then
-                fireproximityprompt(sub.ProximityPrompt)
-            end
-        end
-
-        -- 2. บังคับให้เสาเข้าโหมดโชว์ลำดับไฟ (กด Submit หรือกดเสา 1 ย้ำจนกว่า SelectPrompt.Enabled จะกลายเป็น false)
-        local tTrigger = tick()
-        while pillars[1].LightTrigger.SelectPrompt.Enabled and not obj.Value and (tick() - tTrigger < 8) do
-            -- ลองกด Submit ก่อนเพื่อเริ่มเกม
-            if sub.ProximityPrompt.Enabled then
-                TeleportTo(CFrame.new(sub.WorldPosition + Vector3.new(0, 3, 0)))
-                task.wait(0.2)
-                fireproximityprompt(sub.ProximityPrompt)
-                task.wait(0.35)
-            end
-            -- ถ้า Submit แล้ว SelectPrompt ยังเปิดอยู่ ให้กดเสา 1 ย้ำให้พลาดเพื่อบังคับรีเซ็ตโชว์ลำดับไฟใหม่
-            if pillars[1].LightTrigger.SelectPrompt.Enabled then
-                TeleportTo(pillars[1].LightTrigger.CFrame + Vector3.new(0, 3, 0))
-                task.wait(0.2)
-                fireproximityprompt(pillars[1].LightTrigger.SelectPrompt)
-                task.wait(0.45)
+            task.wait(0.35)
+            fireproximityprompt(sub.ProximityPrompt)
+            task.wait(0.1)
+        elseif pillars[1].LightTrigger.SelectPrompt.Enabled then
+            for _ = 1, 8 do
+                if not pillars[1].LightTrigger.SelectPrompt.Enabled or obj.Value then break end
+                clickPillarVerified(1)
             end
         end
 
         if obj.Value then break end
 
-        -- 3. ตอนนี้ SelectPrompt.Enabled == false แล้ว (เสากำลังจะกะพริบโชว์ลำดับไฟ 7 ครั้ง)
-        -- ยืนรอตรงเสากลางและอัดลำดับไฟสีแดงทีละต้นจนกว่า SelectPrompt.Enabled จะกลับมาเป็น true
-        TeleportTo(CFrame.new(sub.WorldPosition + Vector3.new(0, 4, 0)))
         local seq = {}
         local lastRed = ""
-        local tRecord = tick()
-
-        while not pillars[1].LightTrigger.SelectPrompt.Enabled and not obj.Value and (tick() - tRecord < 16) do
+        local tRec = tick()
+        while not pillars[1].LightTrigger.SelectPrompt.Enabled and not obj.Value and (tick() - tRec < 15) do
             local redList = {}
             for i, p in ipairs(pillars) do
                 if tostring(p.LightTrigger.BrickColor) == "Really red" then
@@ -475,51 +494,24 @@ local function SolvePillars()
             end
             local cur = table.concat(redList, "+")
             if cur ~= lastRed then
-                -- บันทึกเฉพาะจังหวะที่ไฟสีแดงติดแค่ 1 ต้น (ไม่นับตอนติดพร้อมกัน 3 ต้นตอนเฟล)
                 if #redList == 1 then
                     table.insert(seq, tonumber(redList[1]))
                 end
                 lastRed = cur
             end
-            task.wait(0.03)
+            task.wait(0.02)
         end
 
-        -- 4. ถ้ารอบนี้ได้ลำดับไฟครบ (ปกติ 7 จังหวะ) ให้วาร์ปไปกดตามลำดับทีละต้น
-        if #seq >= 5 and not obj.Value then
-            task.wait(0.35)
-            local failedMidway = false
+        if obj.Value then break end
 
+        if #seq > 0 then
+            task.wait(0.2)
             for _, pIdx in ipairs(seq) do
-                if obj.Value then break end
-                waitAllBlack(2.5)
-                task.wait(0.12)
-
-                local p = pillars[pIdx]
-                if not p.LightTrigger.SelectPrompt.Enabled then
-                    failedMidway = true
-                    break
-                end
-
-                TeleportTo(p.LightTrigger.CFrame + Vector3.new(0, 3, 0))
-                task.wait(0.22)
-                fireproximityprompt(p.LightTrigger.SelectPrompt)
-                task.wait(0.28)
+                if obj.Value or not pillars[1].LightTrigger.SelectPrompt.Enabled then break end
+                clickPillarVerified(pIdx)
             end
-
-            -- 5. พอกดครบทุกจังหวะแล้ว รอไฟสีแดงดับแล้ววาร์ปไปกด Submit เพื่อจบภารกิจ
-            if not failedMidway and not obj.Value then
-                waitAllBlack(2.5)
-                task.wait(0.2)
-                if sub.ProximityPrompt.Enabled then
-                    TeleportTo(CFrame.new(sub.WorldPosition + Vector3.new(0, 3, 0)))
-                    task.wait(0.25)
-                    fireproximityprompt(sub.ProximityPrompt)
-                    task.wait(0.6)
-                end
-            end
+            task.wait(0.8)
         end
-
-        task.wait(0.3)
     end
 end
 
@@ -707,21 +699,50 @@ saitoTab:Button({
         EnableSkillCheckBypass()
         EnsureCheckpointTriggered()
 
-        SolveNotes()
-        SolvePowerBox()
-        SolveWires()
-        SolvePainting()
-        SolveThreeXThree()
-        SolvePillars()
+        local obj = workspace:FindFirstChild("MainPuzzle") and workspace.MainPuzzle:FindFirstChild("Objectives")
+        if obj then
+            for _ = 1, 3 do
+                SolveNotes()
+                SolvePowerBox()
+                SolveWires()
+                SolvePainting()
+                SolveThreeXThree()
+                SolvePillars()
 
+                if obj.Notes.Value >= (obj.Notes:GetAttribute("Required") or 10)
+                    and obj.PowerBox.Value
+                    and obj.Wires.Value
+                    and obj.Painting.Value
+                    and obj.ThreeXThree.Value
+                    and obj.Pillars.Value then
+                    break
+                end
+                task.wait(0.5)
+            end
+        end
+
+        local tWait = tick()
         local door = workspace:FindFirstChild("EscapeDoor")
+        while not door and (tick() - tWait < 15) do
+            task.wait(0.25)
+            door = workspace:FindFirstChild("EscapeDoor")
+        end
+
+        StopFloat()
         if door then
-            TeleportTo(door)
-            task.wait(0.5)
+            local touchPart = door:FindFirstChild("Part") or door:FindFirstChildWhichIsA("BasePart", true)
+            if touchPart then
+                TeleportTo(touchPart)
+                task.wait(0.2)
+                if firetouchinterest then
+                    firetouchinterest(hrp, touchPart, 0)
+                    task.wait(0.1)
+                    firetouchinterest(hrp, touchPart, 1)
+                end
+            end
         else
             ReturnCFrame()
         end
-        StopFloat()
     end,
 })
 
@@ -806,6 +827,7 @@ local infStaminaActive = false
 local autoCalmActive = false
 local autoSafeTPActive = false
 local antiEffectsActive = false
+local espEscapeDoorActive = false
 
 saitoTab:Toggle({
     Title = "Infinite Stamina (วิ่งไม่เหนื่อย)",
@@ -879,7 +901,7 @@ saitoTab:Toggle({
 })
 
 saitoTab:Toggle({
-    Title = "esp All Puzzles & SafeZones",
+    Title = "esp All Puzzles (จุดแก้ปริศนาทั้งหมด)",
     Value = false,
     Callback = function(Value)
         local mb = workspace:FindFirstChild("MapDecor") and workspace.MapDecor:FindFirstChild("MemoryBuilds")
@@ -900,13 +922,28 @@ saitoTab:Toggle({
         if workspace:FindFirstChild("Paintings") and workspace.Paintings:FindFirstChild("Painting3") then
             ApplyESP(workspace.Paintings.Painting3, Value, "Painting Puzzle", Color3.fromRGB(150, 255, 0), Vector3.new(2, 6, 6))
         end
+    end,
+})
+
+saitoTab:Toggle({
+    Title = "esp SafeZones (จุดปลอดภัยทั้งหมด)",
+    Value = false,
+    Callback = function(Value)
         if workspace:FindFirstChild("SafeZones") then
             for i, sz in ipairs(workspace.SafeZones:GetChildren()) do
                 ApplyESP(sz, Value, "SafeZone #" .. i, Color3.fromRGB(80, 220, 255), sz.Size)
             end
         end
+    end,
+})
+
+saitoTab:Toggle({
+    Title = "esp EscapeDoor (ประตูทางออก)",
+    Value = false,
+    Callback = function(Value)
+        espEscapeDoorActive = Value
         if workspace:FindFirstChild("EscapeDoor") then
-            ApplyESP(workspace.EscapeDoor, Value, "EXIT DOOR", Color3.fromRGB(0, 255, 0), Vector3.new(6, 10, 6))
+            ApplyESP(workspace.EscapeDoor, Value, "EXIT DOOR", Color3.fromRGB(0, 255, 0), Vector3.new(6, 10, 6), true)
         end
     end,
 })
@@ -1191,6 +1228,11 @@ RunService.Heartbeat:Connect(function()
                 pg.ChaseScreen.Enabled = false
             end
         end
+    end
+
+    -- [Part 2] อัปเดต ESP EscapeDoor อัตโนมัติทันทีที่ประตูถูกเสกขึ้นมา
+    if espEscapeDoorActive and workspace:FindFirstChild("EscapeDoor") then
+        ApplyESP(workspace.EscapeDoor, true, "EXIT DOOR", Color3.fromRGB(0, 255, 0), Vector3.new(6, 10, 6), true)
     end
 
     -- [Part 3] Auto Shockwave & Anti-Obsession
