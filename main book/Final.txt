@@ -224,13 +224,13 @@ local function EnsureCheckpointTriggered()
     local cp = workspace:FindFirstChild("Checkpoints") and workspace.Checkpoints:FindFirstChild("Checkpoint")
     if cp and hrp then
         TeleportTo(cp)
-        task.wait(0.2)
+        task.wait(0.25)
         if firetouchinterest then
             firetouchinterest(hrp, cp, 0)
             task.wait(0.05)
             firetouchinterest(hrp, cp, 1)
         end
-        task.wait(0.2)
+        task.wait(0.25)
     end
 end
 
@@ -392,9 +392,10 @@ local function SolveThreeXThree()
     end
 end
 
+-- [แก้ไขใหม่ 100%] วนลูปแก้เสา 3 ต้นจนกว่า Objectives.Pillars.Value == true ค่อยวาร์ปกลับ
 local function SolvePillars()
     local obj = workspace:FindFirstChild("MainPuzzle") and workspace.MainPuzzle.Objectives:FindFirstChild("Pillars")
-    if obj and obj.Value then return end
+    if not obj or obj.Value then return end
 
     local ch3 = workspace:FindFirstChild("MapDecor") and workspace.MapDecor.MemoryBuilds:FindFirstChild("Ch3Pillars")
     if not ch3 then return end
@@ -408,59 +409,118 @@ local function SolvePillars()
     local sub = ch3:FindFirstChild("Submit")
     if #pillars < 3 or not sub then return end
 
-    local function waitAllBlack()
+    local function isAnyRed()
+        for _, p in ipairs(pillars) do
+            if tostring(p.LightTrigger.BrickColor) == "Really red" then
+                return true
+            end
+        end
+        return false
+    end
+
+    local function waitAllBlack(timeout)
         local t = tick()
         repeat
-            task.wait(0.05)
-            local red = false
-            for _, p in ipairs(pillars) do
-                if tostring(p.LightTrigger.BrickColor) == "Really red" then red = true end
-            end
-        until not red or (tick() - t > 3)
+            task.wait(0.04)
+        until not isAnyRed() or (tick() - t > (timeout or 3))
     end
 
-    for _ = 1, 8 do
-        if not pillars[1].LightTrigger.SelectPrompt.Enabled then break end
-        TeleportTo(pillars[1].LightTrigger.CFrame + Vector3.new(0, 3, 0))
-        task.wait(0.2)
-        InteractPrompt(pillars[1].LightTrigger.SelectPrompt, 0)
-        task.wait(0.55)
-    end
+    -- วนทำจนกว่าภารกิจ Pillars จะสำเร็จ (สูงสุด 5 รอบกันค้าง)
+    for attempt = 1, 5 do
+        if obj.Value then break end
 
-    local t0 = tick()
-    local seq, lastState = {}, ""
-    while not pillars[1].LightTrigger.SelectPrompt.Enabled and (tick() - t0 < 14) do
-        local s = {}
-        for i, p in ipairs(pillars) do
-            if tostring(p.LightTrigger.BrickColor) == "Really red" then
-                table.insert(s, tostring(i))
+        -- 1. ถ้าเสายังไม่เปิด SelectPrompt ให้กด Submit หรือรอจนกว่าจะพร้อม
+        if not pillars[1].LightTrigger.SelectPrompt.Enabled then
+            TeleportTo(CFrame.new(sub.WorldPosition + Vector3.new(0, 3, 0)))
+            task.wait(0.25)
+            if sub.ProximityPrompt.Enabled then
+                fireproximityprompt(sub.ProximityPrompt)
             end
         end
-        local cur = table.concat(s, "+")
-        if cur ~= lastState then
-            if #cur == 1 then table.insert(seq, tonumber(cur)) end
-            lastState = cur
+
+        -- 2. บังคับให้เสาเข้าโหมดโชว์ลำดับไฟ (กด Submit หรือกดเสา 1 ย้ำจนกว่า SelectPrompt.Enabled จะกลายเป็น false)
+        local tTrigger = tick()
+        while pillars[1].LightTrigger.SelectPrompt.Enabled and not obj.Value and (tick() - tTrigger < 8) do
+            -- ลองกด Submit ก่อนเพื่อเริ่มเกม
+            if sub.ProximityPrompt.Enabled then
+                TeleportTo(CFrame.new(sub.WorldPosition + Vector3.new(0, 3, 0)))
+                task.wait(0.2)
+                fireproximityprompt(sub.ProximityPrompt)
+                task.wait(0.35)
+            end
+            -- ถ้า Submit แล้ว SelectPrompt ยังเปิดอยู่ ให้กดเสา 1 ย้ำให้พลาดเพื่อบังคับรีเซ็ตโชว์ลำดับไฟใหม่
+            if pillars[1].LightTrigger.SelectPrompt.Enabled then
+                TeleportTo(pillars[1].LightTrigger.CFrame + Vector3.new(0, 3, 0))
+                task.wait(0.2)
+                fireproximityprompt(pillars[1].LightTrigger.SelectPrompt)
+                task.wait(0.45)
+            end
         end
-        task.wait(0.03)
-    end
 
-    task.wait(0.4)
-    for _, pIdx in ipairs(seq) do
-        waitAllBlack()
-        task.wait(0.15)
-        local p = pillars[pIdx]
-        TeleportTo(p.LightTrigger.CFrame + Vector3.new(0, 3, 0))
-        task.wait(0.22)
-        InteractPrompt(p.LightTrigger.SelectPrompt, 0)
-        task.wait(0.25)
-    end
+        if obj.Value then break end
 
-    waitAllBlack()
-    task.wait(0.2)
-    TeleportTo(CFrame.new(sub.WorldPosition + Vector3.new(0, 3, 0)))
-    task.wait(0.25)
-    InteractPrompt(sub.ProximityPrompt, 0)
-    task.wait(0.5)
+        -- 3. ตอนนี้ SelectPrompt.Enabled == false แล้ว (เสากำลังจะกะพริบโชว์ลำดับไฟ 7 ครั้ง)
+        -- ยืนรอตรงเสากลางและอัดลำดับไฟสีแดงทีละต้นจนกว่า SelectPrompt.Enabled จะกลับมาเป็น true
+        TeleportTo(CFrame.new(sub.WorldPosition + Vector3.new(0, 4, 0)))
+        local seq = {}
+        local lastRed = ""
+        local tRecord = tick()
+
+        while not pillars[1].LightTrigger.SelectPrompt.Enabled and not obj.Value and (tick() - tRecord < 16) do
+            local redList = {}
+            for i, p in ipairs(pillars) do
+                if tostring(p.LightTrigger.BrickColor) == "Really red" then
+                    table.insert(redList, tostring(i))
+                end
+            end
+            local cur = table.concat(redList, "+")
+            if cur ~= lastRed then
+                -- บันทึกเฉพาะจังหวะที่ไฟสีแดงติดแค่ 1 ต้น (ไม่นับตอนติดพร้อมกัน 3 ต้นตอนเฟล)
+                if #redList == 1 then
+                    table.insert(seq, tonumber(redList[1]))
+                end
+                lastRed = cur
+            end
+            task.wait(0.03)
+        end
+
+        -- 4. ถ้ารอบนี้ได้ลำดับไฟครบ (ปกติ 7 จังหวะ) ให้วาร์ปไปกดตามลำดับทีละต้น
+        if #seq >= 5 and not obj.Value then
+            task.wait(0.35)
+            local failedMidway = false
+
+            for _, pIdx in ipairs(seq) do
+                if obj.Value then break end
+                waitAllBlack(2.5)
+                task.wait(0.12)
+
+                local p = pillars[pIdx]
+                if not p.LightTrigger.SelectPrompt.Enabled then
+                    failedMidway = true
+                    break
+                end
+
+                TeleportTo(p.LightTrigger.CFrame + Vector3.new(0, 3, 0))
+                task.wait(0.22)
+                fireproximityprompt(p.LightTrigger.SelectPrompt)
+                task.wait(0.28)
+            end
+
+            -- 5. พอกดครบทุกจังหวะแล้ว รอไฟสีแดงดับแล้ววาร์ปไปกด Submit เพื่อจบภารกิจ
+            if not failedMidway and not obj.Value then
+                waitAllBlack(2.5)
+                task.wait(0.2)
+                if sub.ProximityPrompt.Enabled then
+                    TeleportTo(CFrame.new(sub.WorldPosition + Vector3.new(0, 3, 0)))
+                    task.wait(0.25)
+                    fireproximityprompt(sub.ProximityPrompt)
+                    task.wait(0.6)
+                end
+            end
+        end
+
+        task.wait(0.3)
+    end
 end
 
 -- ==========================================
@@ -630,7 +690,7 @@ fiTab:Toggle({
 })
 
 -- ==========================================
--- TAB 2: DistortedSaito (คงเดิม 100%)
+-- TAB 2: DistortedSaito
 -- ==========================================
 local saitoTab = Window:Tab({
     Title = "DistortedSaito",
@@ -981,7 +1041,6 @@ fiTab:Toggle({
     end,
 })
 
--- กด Q เพื่อพุ่งหลบทันทีเมื่อเปิด Infinite Dash
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe or not infDashActive or not character or not hrp then return end
     if input.KeyCode == Enum.KeyCode.Q or input.KeyCode == Enum.KeyCode.ButtonB then
