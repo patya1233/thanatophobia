@@ -720,13 +720,13 @@ local function StartFly()
 
         local Direction =
             (Camera.CFrame.LookVector
-                * (FlyControls.W + FlyControls.S))
+            * (FlyControls.W + FlyControls.S))
 
             + (Camera.CFrame.RightVector
-                * (FlyControls.A + FlyControls.D))
+            * (FlyControls.A + FlyControls.D))
 
             + (Vector3.new(0, 1, 0)
-                * (FlyControls.Q + FlyControls.E))
+            * (FlyControls.Q + FlyControls.E))
 
         local Speed = FlySpeedValue * 50
 
@@ -778,7 +778,7 @@ end)
 
 local uTab = Window:Tab({
     Title = "Update",
-    Icon = "align-justify",
+    Icon = "scroll-text",
 })
 
 uTab:Paragraph({
@@ -790,8 +790,8 @@ uTab:Paragraph({
     Title = "🎮 Game Mode",
     Desc = [[
 ⚙️ Auto Complete
-• Working on Auto Complete for additional Game Modes.
-• Game Mode support coming soon.
+- Working on Auto Complete for additional Game Modes.
+- Game Mode support coming soon.
 ]]
 })
 
@@ -800,29 +800,28 @@ uTab:Paragraph({
     Desc = [[
 💡 New Features
 
-uTab:Paragraph({
-    Title = "📔 Book 1 | Final",
-Desc = [[
-    👑 [Part 1 - LordEmperorSaito]
-    ✅ Added Auto Spawn Boss & Auto Burn Cursed
-    📦 Added ESP Torch & Cursed
-    👾 Added ESP Monster
-    
-    💀 [Part 2 - DistortedSaito]
-    ✅ Added Auto Win (All 6 Puzzles + Auto Exit Door)
-    🧩 Added Individual Auto Puzzles (Notes, PowerBox, Wires, Painting, 3x3, 3 Pillars)
-    🛡️ Added Auto SkillCheck Bypass, Auto Calm Down & Auto SafeZone TP
-    ⚡ Added Infinite Stamina & Anti-Jumpscare / Fear Blur
-    📦 Added ESP Notes, All Puzzles, SafeZones & EscapeDoor
-    
-    ⚔️ [Part 3 - Saito Finale Boss]
-    🔥 Added Auto Farm Boss Phase 1 & Phase 2 (Auto Dodge & Auto Punish Downed Boss)
-    🎯 Added Kill Aura (Katana) & WhiteFlameTorch Aimbot
-    🛡️ Added Smart Auto Block / Parry, Auto Shockwave Bypass & Anti-Obsession
-    💎 Added Auto Consume Purebloom Crystals & Infinite Dash (Q)
-    🎬 Added Quick Ending Selector (Escape / Kill Saito)
-    👾 Added Real-time ESP Boss, Purebloom Crystals & Boss Attacks
-    ]]
+📔 Book 1 | Final
+
+👑 [Part 1 - LordEmperorSaito]
+✅ Added Auto Spawn Boss & Auto Burn Cursed
+📦 Added ESP Torch & Cursed
+👾 Added ESP Monster
+
+💀 [Part 2 - DistortedSaito]
+✅ Added Auto Win (All 6 Puzzles + Auto Exit Door)
+🧩 Added Individual Auto Puzzles (Notes, PowerBox, Wires, Painting, 3x3, 3 Pillars)
+🛡️ Added Auto SkillCheck Bypass, Auto Calm Down & Auto SafeZone TP
+⚡ Added Infinite Stamina & Anti-Jumpscare / Fear Blur
+📦 Added ESP Notes, All Puzzles, SafeZones & EscapeDoor
+
+⚔️ [Part 3 - Saito Finale Boss]
+🔥 Added Auto Farm Boss Phase 1 & Phase 2 (Auto Dodge & Auto Punish Downed Boss)
+🎯 Added Kill Aura (Katana) & WhiteFlameTorch Aimbot
+🛡️ Added Smart Auto Block / Parry, Auto Shockwave Bypass & Anti-Obsession
+💎 Added Auto Consume Purebloom Crystals & Infinite Dash (Q)
+🎬 Added Quick Ending Selector (Escape / Kill Saito)
+👾 Added Real-time ESP Boss, Purebloom Crystals & Boss Attacks
+]]
 })
 
 -- =========================================================
@@ -831,7 +830,7 @@ Desc = [[
 
 local mTab = Window:Tab({
     Title = "Main",
-    Icon = "align-justify",
+    Icon = "sliders-horizontal",
 })
 
 local lighting = game:GetService("Lighting")
