@@ -353,7 +353,7 @@ local Button = fiTab:Button({
         local MonsterPath = workspace:FindFirstChild("Monsters", true)
 
         -- ระยะกันมอนเฉพาะ Cursed
-        local CursedMonsterDistance = 30
+        local CursedMonsterDistance = 10
 
         local SaitoHealth = MainPuzzle:WaitForChild("SaitoHealth")
 
