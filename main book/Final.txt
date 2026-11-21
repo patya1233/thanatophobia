@@ -3,6 +3,7 @@ local Window = getgenv().FackWindowb1fi
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -14,7 +15,7 @@ player.CharacterAdded:Connect(function(char)
 end)
 
 -- ==========================================
--- ฟังก์ชันส่วนกลาง (Shared Helpers)
+-- ฟังก์ชันส่วนกลาง (Shared Helpers ใช้ร่วมกันทั้ง 3 แท็บ)
 -- ==========================================
 local function RemoveESP(object)
     if not object then return end
@@ -80,12 +81,14 @@ local function CreateESPBox(object, color, size, transparency)
     return box
 end
 
--- ฟังก์ชันรวมสำหรับเปิด/ปิด ESP เพื่อลดความยาวโค้ด
-local function ApplyESP(target, enabled, text, color, boxSize)
+local function ApplyESP(target, enabled, text, color, boxSize, useHighlight)
     if not target then return end
     if enabled then
         CreateESPBox(target, color, boxSize)
         CreateESPText(target, text or target.Name, color, Vector3.new(0, 6, 0), UDim2.new(0, 150, 0, 40))
+        if useHighlight then
+            CreateHighlight(target, color, Color3.fromRGB(255, 255, 255), 0.5, 0)
+        end
     else
         RemoveESP(target)
     end
@@ -159,8 +162,12 @@ local function ReturnCFrame()
 end
 
 local function GetMonsterRoot(monster)
+    if not monster then return nil end
     if monster:IsA("Model") then
-        return monster:FindFirstChild("HumanoidRootPart") or monster.PrimaryPart or monster:FindFirstChildWhichIsA("BasePart", true)
+        return monster:FindFirstChild("HumanoidRootPart")
+            or monster:FindFirstChild("Cube")
+            or monster.PrimaryPart
+            or monster:FindFirstChildWhichIsA("BasePart", true)
     elseif monster:IsA("BasePart") then
         return monster
     end
@@ -201,7 +208,18 @@ local function StopFloat()
     end
 end
 
--- ฟังก์ชัน активировать Checkpoint เริ่มด่าน Part 2 (เพื่อให้เสาและปริศนาทั้งหมดเปิดใช้งาน)
+local function DestroyTouchTransmitters(container)
+    if not container then return end
+    for _, d in ipairs(container:GetDescendants()) do
+        if d:IsA("TouchTransmitter") then
+            d:Destroy()
+        end
+    end
+end
+
+-- ==========================================
+-- ฟังก์ชันแก้ปริศนาของ Part 2 (DistortedSaito)
+-- ==========================================
 local function EnsureCheckpointTriggered()
     local cp = workspace:FindFirstChild("Checkpoints") and workspace.Checkpoints:FindFirstChild("Checkpoint")
     if cp and hrp then
@@ -216,22 +234,23 @@ local function EnsureCheckpointTriggered()
     end
 end
 
--- ฮุค SkillCheck / BoxGame ให้ชนะ 100% ทันที
 local function EnableSkillCheckBypass()
     pcall(function()
         if ReplicatedStorage:FindFirstChild("BoxGame") then
             ReplicatedStorage.BoxGame.OnClientInvoke = function() return true, 8 end
         end
-        local sc = player:FindFirstChild("PlayerGui") and player.PlayerGui:FindFirstChild("SkillCheckGui")
-        if sc and sc:FindFirstChild("BoxGame") then
-            sc.BoxGame.OnInvoke = function() return true, 8 end
+        local pg = player:FindFirstChild("PlayerGui")
+        if pg then
+            if pg:FindFirstChild("SkillCheckGui") and pg.SkillCheckGui:FindFirstChild("BoxGame") then
+                pg.SkillCheckGui.BoxGame.OnInvoke = function() return true, 8 end
+            end
+            if pg:FindFirstChild("Shockwave") and pg.Shockwave:FindFirstChild("Frame") and pg.Shockwave.Frame:FindFirstChild("Function") then
+                pg.Shockwave.Frame.Function.OnInvoke = function() return 0 end
+            end
         end
     end)
 end
 
--- ==========================================
--- ฟังก์ชันแก้ปริศนาทั้ง 6 ของ Part 2 (DistortedSaito)
--- ==========================================
 local function SolveNotes()
     local notes = workspace:FindFirstChild("MainPuzzle") and workspace.MainPuzzle:FindFirstChild("Notes")
     if not notes then return end
@@ -331,7 +350,6 @@ local function SolveThreeXThree()
     local tp = workspace:FindFirstChild("TilePuzzle")
     if not tp or not tp:FindFirstChild("MAIN") or not tp:FindFirstChild("Part") then return end
 
-    -- ต้องยืนอยู่ในโซน TilePuzzle.Part เพื่อให้เซิร์ฟเวอร์ยอมรับการคลิกแผ่นป้าย
     TeleportTo(tp.Part.CFrame + Vector3.new(0, 2.5, 0))
     if firetouchinterest then firetouchinterest(hrp, tp.Part, 0) end
     task.wait(0.4)
@@ -401,7 +419,6 @@ local function SolvePillars()
         until not red or (tick() - t > 3)
     end
 
-    -- บังคับให้เสาแสดงลำดับไฟ 7 จังหวะ (Simon Says)
     for _ = 1, 8 do
         if not pillars[1].LightTrigger.SelectPrompt.Enabled then break end
         TeleportTo(pillars[1].LightTrigger.CFrame + Vector3.new(0, 3, 0))
@@ -410,7 +427,6 @@ local function SolvePillars()
         task.wait(0.55)
     end
 
-    -- บันทึกลำดับเสาที่กะพริบสีแดงทีละต้น
     local t0 = tick()
     local seq, lastState = {}, ""
     while not pillars[1].LightTrigger.SelectPrompt.Enabled and (tick() - t0 < 14) do
@@ -445,6 +461,37 @@ local function SolvePillars()
     task.wait(0.25)
     InteractPrompt(sub.ProximityPrompt, 0)
     task.wait(0.5)
+end
+
+-- ==========================================
+-- ฟังก์ชันของ Part 3 (Saito Finale Boss Fight)
+-- ==========================================
+local function GetActiveBossModel()
+    local bossFolder = workspace:FindFirstChild("Boss")
+    if not bossFolder then return nil end
+    local cfg = bossFolder:FindFirstChild("Configuration")
+    if cfg and cfg:FindFirstChild("P1Health") and cfg.P1Health.Value > 0 and bossFolder:FindFirstChild("BossModel1") then
+        return bossFolder.BossModel1
+    end
+    return bossFolder:FindFirstChild("BossModel2") or bossFolder:FindFirstChild("BossModel1")
+end
+
+local function ConsumeNearestCrystal()
+    local pb = workspace:FindFirstChild("PureBloom")
+    if not pb or not hrp then return false end
+    for _, c in ipairs(pb:GetChildren()) do
+        local pp = c:FindFirstChildWhichIsA("ProximityPrompt", true)
+        if pp and pp.Enabled and c.Transparency < 1 then
+            SaveCFrame()
+            TeleportTo(c)
+            task.wait(0.2)
+            InteractPrompt(pp, 0)
+            task.wait(0.2)
+            ReturnCFrame()
+            return true
+        end
+    end
+    return false
 end
 
 -- ==========================================
@@ -583,7 +630,7 @@ fiTab:Toggle({
 })
 
 -- ==========================================
--- TAB 2: DistortedSaito (ระบบ 1, 2, 3-Stamina, 4-ESP)
+-- TAB 2: DistortedSaito (คงเดิม 100%)
 -- ==========================================
 local saitoTab = Window:Tab({
     Title = "DistortedSaito",
@@ -689,15 +736,10 @@ saitoTab:Toggle({
     Title = "Auto SkillCheck Bypass (ชนะมินิเกม 100%)",
     Value = false,
     Callback = function(Value)
-        if Value then
-            EnableSkillCheckBypass()
-        end
+        if Value then EnableSkillCheckBypass() end
     end,
 })
 
--- ==========================================
--- ระบบ 2 & 3: Survival, Monster Defense & Stamina
--- ==========================================
 saitoTab:Section({ Title = "2 & 3. Survival & Infinite Stamina" })
 
 local infStaminaActive = false
@@ -705,61 +747,10 @@ local autoCalmActive = false
 local autoSafeTPActive = false
 local antiEffectsActive = false
 
-RunService.Heartbeat:Connect(function()
-    if not character then return end
-
-    -- 3. Infinite Stamina
-    if infStaminaActive then
-        local stam = character:FindFirstChild("Stamina")
-        if stam and stam.Value < 100 then
-            stam.Value = 100
-        end
-    end
-
-    -- 2. Auto Calm Down (No Fear)
-    if autoCalmActive then
-        local ff = character:FindFirstChild("FearFolder")
-        local fv = ff and ff:FindFirstChild("FearVal")
-        if fv and fv.Value > 30 and ReplicatedStorage:FindFirstChild("CalmDown") then
-            task.spawn(function()
-                pcall(function()
-                    ReplicatedStorage.CalmDown:InvokeServer("CalmDown", 40)
-                end)
-            end)
-        end
-    end
-
-    -- 2. Auto SafeZone TP เมื่อผีเข้าใกล้หรือไล่ล่า
-    if autoSafeTPActive and workspace:FindFirstChild("Monsters") and workspace:FindFirstChild("SafeZones") then
-        local saito = workspace.Monsters:FindFirstChild("DistortedSaito")
-        local chasing = saito and saito:FindFirstChild("Values") and saito.Values:FindFirstChild("Chasing") and saito.Values.Chasing.Value
-        if chasing or IsMonsterNear(workspace.Monsters, hrp, 35) then
-            TeleportToNearestSafeLight(workspace.SafeZones)
-        end
-    end
-
-    -- 2. Anti-Fear / Anti-Chase Effects
-    if antiEffectsActive then
-        local blur = game.Lighting:FindFirstChild("FearStaticBlur")
-        if blur then blur.Size = 0 end
-        local pg = player:FindFirstChild("PlayerGui")
-        if pg then
-            if pg:FindFirstChild("StaticUI") and pg.StaticUI:FindFirstChild("staticframe") then
-                pg.StaticUI.staticframe.ImageTransparency = 1
-            end
-            if pg:FindFirstChild("ChaseScreen") then
-                pg.ChaseScreen.Enabled = false
-            end
-        end
-    end
-end)
-
 saitoTab:Toggle({
     Title = "Infinite Stamina (วิ่งไม่เหนื่อย)",
     Value = false,
-    Callback = function(Value)
-        infStaminaActive = Value
-    end,
+    Callback = function(Value) infStaminaActive = Value end,
 })
 
 saitoTab:Toggle({
@@ -774,9 +765,7 @@ saitoTab:Toggle({
 saitoTab:Toggle({
     Title = "Auto SafeZone TP (วาร์ปหนีผีอัตโนมัติ)",
     Value = false,
-    Callback = function(Value)
-        autoSafeTPActive = Value
-    end,
+    Callback = function(Value) autoSafeTPActive = Value end,
 })
 
 saitoTab:Toggle({
@@ -798,14 +787,9 @@ saitoTab:Toggle({
 saitoTab:Button({
     Title = "Delete Monster Hitbox (กันผีชนตาย)",
     Callback = function()
-        pcall(function()
-            local saito = workspace.Monsters:FindFirstChild("DistortedSaito")
-            if saito then
-                for _, d in ipairs(saito:GetDescendants()) do
-                    if d:IsA("TouchTransmitter") then d:Destroy() end
-                end
-            end
-        end)
+        if workspace:FindFirstChild("Monsters") then
+            DestroyTouchTransmitters(workspace.Monsters)
+        end
     end,
 })
 
@@ -818,9 +802,6 @@ saitoTab:Button({
     end,
 })
 
--- ==========================================
--- ระบบ 4: Objectives & Puzzle ESP + Monster ESP
--- ==========================================
 saitoTab:Section({ Title = "4. Objectives & Monster ESP" })
 
 saitoTab:Toggle({
@@ -877,11 +858,361 @@ saitoTab:Toggle({
         if not workspace:FindFirstChild("Monsters") then return end
         for _, v in pairs(workspace.Monsters:GetChildren()) do
             if v:IsA("Model") then
-                ApplyESP(v, Value, v.Name, Color3.fromRGB(255, 0, 0), Vector3.new(5, 12, 5))
-                if Value then
-                    CreateHighlight(v, Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 255, 255), 0.5, 0)
-                end
+                ApplyESP(v, Value, v.Name, Color3.fromRGB(255, 0, 0), Vector3.new(5, 12, 5), true)
             end
         end
     end,
 })
+
+-- ==========================================
+-- TAB 3: Saito (รอบชิงชนะเลิศ Finale Boss Fight)
+-- ==========================================
+local fiTab = Window:Tab({
+    Title = "Saito",
+    Icon = "swords",
+})
+
+fiTab:Section({ Title = "Part 1" })
+
+local killAuraActive = false
+local floatKillBossActive = false
+local autoBlockActive = false
+local autoExecuteSaitoActive = false
+local autoShockwaveBypass = false
+local antiObsessionActive = false
+local autoHealCrystalActive = false
+local antiBossHitboxActive = false
+local infDashActive = false
+local espBossAttacksActive = false
+local swingCounter = 0
+local lastBlockTick = 0
+local lastHealTick = 0
+
+fiTab:Toggle({
+    Title = "Kill Aura (ฟันบอสระยะไกลอัตโนมัติ P1 & P2)",
+    Value = false,
+    Callback = function(Value)
+        killAuraActive = Value
+    end,
+})
+
+fiTab:Toggle({
+    Title = "Auto Float & Farm Boss (ลอยเหนือหัวบอส + ฟันรัวๆ)",
+    Value = false,
+    Callback = function(Value)
+        floatKillBossActive = Value
+        killAuraActive = Value
+        if Value then
+            StartFloat()
+        else
+            StopFloat()
+        end
+    end,
+})
+
+fiTab:Toggle({
+    Title = "Auto Block / Parry (ตั้งการ์ดกันบอสอัตโนมัติ)",
+    Value = false,
+    Callback = function(Value)
+        autoBlockActive = Value
+    end,
+})
+
+fiTab:Toggle({
+    Title = "Auto Execute Saito (กด Kill Him อัตโนมัติตอนเลือดหมด)",
+    Value = false,
+    Callback = function(Value)
+        autoExecuteSaitoActive = Value
+    end,
+})
+
+fiTab:Section({ Title = "2. Boss Mechanics Bypass & Survival" })
+
+fiTab:Toggle({
+    Title = "Auto Shockwave Minigame (ชนะมินิเกมกดปุ่ม 1-4 100%)",
+    Value = false,
+    Callback = function(Value)
+        autoShockwaveBypass = Value
+        if Value then EnableSkillCheckBypass() end
+    end,
+})
+
+fiTab:Toggle({
+    Title = "Anti-Obsession (กันบอสสะกดจิตดึงกล้อง & กันสโลว์)",
+    Value = false,
+    Callback = function(Value)
+        antiObsessionActive = Value
+    end,
+})
+
+fiTab:Toggle({
+    Title = "Auto Consume Purebloom (วาร์ปเก็บคริสตัลฮีลอัตโนมัติ)",
+    Value = false,
+    Callback = function(Value)
+        autoHealCrystalActive = Value
+    end,
+})
+
+fiTab:Toggle({
+    Title = "Delete Boss Hitboxes & Attacks (กันดาเมจชนบอส)",
+    Value = false,
+    Callback = function(Value)
+        antiBossHitboxActive = Value
+        if Value and workspace:FindFirstChild("Boss") then
+            DestroyTouchTransmitters(workspace.Boss)
+        end
+    end,
+})
+
+fiTab:Button({
+    Title = "Consume Purebloom Crystal Now (เก็บคริสตัลฮีลทันที)",
+    Callback = function()
+        ConsumeNearestCrystal()
+    end,
+})
+
+fiTab:Section({ Title = "3. Movement, Cutscene & Ending" })
+
+fiTab:Toggle({
+    Title = "Infinite Dash (กด Q พุ่งหลบไร้คูลดาวน์)",
+    Value = false,
+    Callback = function(Value)
+        infDashActive = Value
+    end,
+})
+
+-- กด Q เพื่อพุ่งหลบทันทีเมื่อเปิด Infinite Dash
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe or not infDashActive or not character or not hrp then return end
+    if input.KeyCode == Enum.KeyCode.Q or input.KeyCode == Enum.KeyCode.ButtonB then
+        local hum = character:FindFirstChildOfClass("Humanoid")
+        if hum and hum.MoveDirection.Magnitude > 0 then
+            local kb = hrp:FindFirstChild("DashKnockback")
+            if kb then kb:Destroy() end
+            local att = Instance.new("Attachment", hrp)
+            local lv = Instance.new("LinearVelocity", hrp)
+            lv.Attachment0 = att
+            lv.RelativeTo = Enum.ActuatorRelativeTo.World
+            lv.ForceLimitMode = Enum.ForceLimitMode.PerAxis
+            lv.MaxAxesForce = Vector3.new(math.huge, 0, math.huge)
+            lv.VectorVelocity = hum.MoveDirection * 45
+            task.delay(0.22, function()
+                if lv then lv:Destroy() end
+                if att then att:Destroy() end
+            end)
+        end
+    end
+end)
+
+fiTab:Button({
+    Title = "Skip Cutscene & Spawn Arena (ข้ามคัตซีนเข้าลานบอส)",
+    Callback = function()
+        pcall(function()
+            ReplicatedStorage.LoadState:FireServer(true)
+            RunService:UnbindFromRenderStep("CutsceneCamera")
+            RunService:UnbindFromRenderStep("camera")
+            workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+            if player.PlayerGui:FindFirstChild("Effects") then
+                player.PlayerGui.Effects.Enabled = false
+            end
+            if player.PlayerGui:FindFirstChild("Backpack") then
+                player.PlayerGui.Backpack.Enabled = true
+            end
+            if workspace:FindFirstChild("Spawns") and workspace.Spawns:FindFirstChild("Boss") then
+                ReplicatedStorage.Spawn:InvokeServer(workspace.Spawns.Boss)
+                TeleportTo(workspace.Spawns.Boss.CFrame + Vector3.new(0, 6, 0))
+            end
+        end)
+    end,
+})
+
+fiTab:Button({
+    Title = "Select Ending: Escape (เลือกฉากจบหนีรอด)",
+    Callback = function()
+        if ReplicatedStorage:FindFirstChild("EndingSelectPacket") then
+            ReplicatedStorage.EndingSelectPacket:FireServer("Escape")
+        end
+    end,
+})
+
+fiTab:Button({
+    Title = "Select Ending: Kill Saito (เลือกฉากจบฆ่า Saito)",
+    Callback = function()
+        if ReplicatedStorage:FindFirstChild("EndingSelectPacket") then
+            ReplicatedStorage.EndingSelectPacket:FireServer("Kill")
+        end
+    end,
+})
+
+fiTab:Section({ Title = "4. ESP Boss & Crystals" })
+
+fiTab:Toggle({
+    Title = "esp Boss (Saito Phase 1 & Phase 2)",
+    Value = false,
+    Callback = function(Value)
+        local bossFolder = workspace:FindFirstChild("Boss")
+        if not bossFolder then return end
+        for _, mName in ipairs({"BossModel1", "BossModel2"}) do
+            local bm = bossFolder:FindFirstChild(mName)
+            if bm then
+                ApplyESP(bm, Value, mName, Color3.fromRGB(255, 0, 0), Vector3.new(8, 14, 8), true)
+            end
+        end
+    end,
+})
+
+fiTab:Toggle({
+    Title = "esp Purebloom Crystals (คริสตัลฮีลเลือด 3 จุด)",
+    Value = false,
+    Callback = function(Value)
+        local pb = workspace:FindFirstChild("PureBloom")
+        if not pb then return end
+        for i, c in ipairs(pb:GetChildren()) do
+            ApplyESP(c, Value, "Purebloom #" .. i, Color3.fromRGB(0, 255, 200), Vector3.new(4, 6, 4), true)
+        end
+    end,
+})
+
+fiTab:Toggle({
+    Title = "esp Boss Attacks (พื้นที่สกิลบอส)",
+    Value = false,
+    Callback = function(Value)
+        espBossAttacksActive = Value
+        local ba = workspace:FindFirstChild("Boss") and workspace.Boss:FindFirstChild("BossAttacks")
+        if not ba then return end
+        for _, a in ipairs(ba:GetChildren()) do
+            ApplyESP(a, Value, a.Name, Color3.fromRGB(255, 120, 0))
+        end
+    end,
+})
+
+-- ==========================================
+-- ลูปหลักรวมการทำงานของทั้ง Part 2 และ Part 3
+-- ==========================================
+RunService.Heartbeat:Connect(function()
+    if not character or not hrp then return end
+    local hum = character:FindFirstChildOfClass("Humanoid")
+
+    -- [Part 2] Infinite Stamina
+    if infStaminaActive then
+        local stam = character:FindFirstChild("Stamina")
+        if stam and stam.Value < 100 then stam.Value = 100 end
+    end
+
+    -- [Part 2] Auto Calm Down
+    if autoCalmActive then
+        local ff = character:FindFirstChild("FearFolder")
+        local fv = ff and ff:FindFirstChild("FearVal")
+        if fv and fv.Value > 30 and ReplicatedStorage:FindFirstChild("CalmDown") then
+            task.spawn(function()
+                pcall(function() ReplicatedStorage.CalmDown:InvokeServer("CalmDown", 40) end)
+            end)
+        end
+    end
+
+    -- [Part 2] Auto SafeZone TP
+    if autoSafeTPActive and workspace:FindFirstChild("Monsters") and workspace:FindFirstChild("SafeZones") then
+        local saito = workspace.Monsters:FindFirstChild("DistortedSaito")
+        local chasing = saito and saito:FindFirstChild("Values") and saito.Values:FindFirstChild("Chasing") and saito.Values.Chasing.Value
+        if chasing or IsMonsterNear(workspace.Monsters, hrp, 35) then
+            TeleportToNearestSafeLight(workspace.SafeZones)
+        end
+    end
+
+    -- [Part 2] Anti-Fear Blur
+    if antiEffectsActive then
+        local blur = game.Lighting:FindFirstChild("FearStaticBlur")
+        if blur then blur.Size = 0 end
+        local pg = player:FindFirstChild("PlayerGui")
+        if pg then
+            if pg:FindFirstChild("StaticUI") and pg.StaticUI:FindFirstChild("staticframe") then
+                pg.StaticUI.staticframe.ImageTransparency = 1
+            end
+            if pg:FindFirstChild("ChaseScreen") then
+                pg.ChaseScreen.Enabled = false
+            end
+        end
+    end
+
+    -- [Part 3] Auto Shockwave & Anti-Obsession
+    if autoShockwaveBypass then
+        EnableSkillCheckBypass()
+        if hum and hum.WalkSpeed < 18 then hum.WalkSpeed = 18 end
+    end
+
+    if antiObsessionActive then
+        pcall(function() RunService:UnbindFromRenderStep("cameralol") end)
+        if hum and hum.WalkSpeed < 18 then hum.WalkSpeed = 18 end
+    end
+
+    -- [Part 3] Infinite Dash (ลบ DashKnockback)
+    if infDashActive then
+        local kb = hrp:FindFirstChild("DashKnockback")
+        if kb then kb:Destroy() end
+    end
+
+    -- [Part 3] Delete Boss Hitboxes & ESP Boss Attacks
+    local bossFolder = workspace:FindFirstChild("Boss")
+    if bossFolder then
+        if antiBossHitboxActive then
+            DestroyTouchTransmitters(bossFolder)
+        end
+        if espBossAttacksActive and bossFolder:FindFirstChild("BossAttacks") then
+            for _, a in ipairs(bossFolder.BossAttacks:GetChildren()) do
+                ApplyESP(a, true, a.Name, Color3.fromRGB(255, 120, 0))
+            end
+        end
+    end
+
+    -- [Part 3] Auto Heal Crystal เมื่อเลือดลดหรือเสียหัวใจ
+    if autoHealCrystalActive and (os.clock() - lastHealTick > 2) then
+        local lives = player:FindFirstChild("Lives")
+        local needHeal = (hum and hum.Health < hum.MaxHealth) or (lives and lives.Value < 2)
+        if needHeal then
+            lastHealTick = os.clock()
+            task.spawn(ConsumeNearestCrystal)
+        end
+    end
+
+    -- [Part 3] Kill Aura / Float Farm / Auto Block / Auto Execute
+    if bossFolder then
+        local activeBoss = GetActiveBossModel()
+        local bRoot = GetMonsterRoot(activeBoss)
+
+        if floatKillBossActive and bRoot then
+            TeleportTo(bRoot.CFrame * CFrame.new(0, 9, 4))
+        end
+
+        if killAuraActive and bRoot and hum and hum.Health > 0 then
+            local katana = character:FindFirstChild("Katana") or (player:FindFirstChild("Backpack") and player.Backpack:FindFirstChild("Katana"))
+            if katana then
+                if katana.Parent ~= character then
+                    hum:EquipTool(katana)
+                end
+                if katana:FindFirstChild("SwordSwingCFrame") then
+                    swingCounter = swingCounter + 1
+                    katana:Activate()
+                    katana.SwordSwingCFrame:FireServer(swingCounter, bRoot.CFrame, workspace:GetServerTimeNow())
+                end
+            end
+        end
+
+        if autoBlockActive and (os.clock() - lastBlockTick > 0.5) then
+            local katana = character:FindFirstChild("Katana")
+            if katana and katana:FindFirstChild("BlockRequest") then
+                lastBlockTick = os.clock()
+                task.spawn(function()
+                    pcall(function() katana.BlockRequest:InvokeServer() end)
+                end)
+            end
+        end
+
+        if autoExecuteSaitoActive and bossFolder:FindFirstChild("BossModel1") then
+            local pp = bossFolder.BossModel1:FindFirstChildWhichIsA("ProximityPrompt", true)
+            if pp and pp.Enabled then
+                TeleportTo(bossFolder.BossModel1)
+                InteractPrompt(pp, 0)
+            end
+        end
+    end
+end)
