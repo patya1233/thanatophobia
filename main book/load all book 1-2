@@ -69,6 +69,7 @@ local v5 = {
 local v6 = {
     9506167885,
     9511354089,
+    100229509124142,
 }
 
 if table.find(v2, game.PlaceId) then
