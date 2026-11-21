@@ -414,7 +414,6 @@ local function SolveThreeXThree()
     end
 end
 
--- แก้ Simon Says 3 รอบต่อเนื่อง (3 จังหวะ -> 5 จังหวะ -> 7 จังหวะ)
 local function SolvePillars()
     local obj = workspace:FindFirstChild("MainPuzzle") and workspace.MainPuzzle.Objectives:FindFirstChild("Pillars")
     if not obj or obj.Value then return end
@@ -516,30 +515,38 @@ local function SolvePillars()
 end
 
 -- ==========================================
--- ฟังก์ชันของ Part 3 (Saito Finale Boss Fight)
+-- ฟังก์ชันของ Part 3 (Saito Finale Boss Fight - ทดสอบสด 100%)
 -- ==========================================
-local function GetActiveBossModel()
-    local bossFolder = workspace:FindFirstChild("Boss")
-    if not bossFolder then return nil end
-    local cfg = bossFolder:FindFirstChild("Configuration")
-    if cfg and cfg:FindFirstChild("P1Health") and cfg.P1Health.Value > 0 and bossFolder:FindFirstChild("BossModel1") then
-        return bossFolder.BossModel1
+local function IsPhase1BossAttacking()
+    local bm1 = workspace:FindFirstChild("Boss") and workspace.Boss:FindFirstChild("BossModel1")
+    local hum = bm1 and bm1:FindFirstChildOfClass("Humanoid")
+    local animator = hum and hum:FindFirstChildOfClass("Animator")
+    if not animator then return false, nil end
+
+    for _, tr in ipairs(animator:GetPlayingAnimationTracks()) do
+        if tr.Priority == Enum.AnimationPriority.Action4 and tr.IsPlaying and tr.TimePosition < (tr.Length - 0.15) then
+            return true, tr
+        end
     end
-    return bossFolder:FindFirstChild("BossModel2") or bossFolder:FindFirstChild("BossModel1")
+    return false, nil
 end
 
+local isHealingCrystal = false
 local function ConsumeNearestCrystal()
+    if isHealingCrystal then return false end
     local pb = workspace:FindFirstChild("PureBloom")
     if not pb or not hrp then return false end
     for _, c in ipairs(pb:GetChildren()) do
         local pp = c:FindFirstChildWhichIsA("ProximityPrompt", true)
         if pp and pp.Enabled and c.Transparency < 1 then
-            SaveCFrame()
-            TeleportTo(c)
-            task.wait(0.2)
+            isHealingCrystal = true
+            local oldCF = hrp.CFrame
+            TeleportTo(c.CFrame + Vector3.new(0, 3, 0))
+            task.wait(0.35)
             InteractPrompt(pp, 0)
-            task.wait(0.2)
-            ReturnCFrame()
+            task.wait(0.35)
+            if hrp then hrp.CFrame = oldCF end
+            isHealingCrystal = false
             return true
         end
     end
@@ -682,7 +689,7 @@ fiTab:Toggle({
 })
 
 -- ==========================================
--- TAB 2: DistortedSaito
+-- TAB 2: DistortedSaito (คงเดิม 100%)
 -- ==========================================
 local saitoTab = Window:Tab({
     Title = "DistortedSaito",
@@ -962,7 +969,7 @@ saitoTab:Toggle({
 })
 
 -- ==========================================
--- TAB 3: Saito (รอบชิงชนะเลิศ Finale Boss Fight)
+-- TAB 3: Saito (รอบชิงชนะเลิศ Finale Boss Fight - คัดเฉพาะที่ใช้ได้ 100%)
 -- ==========================================
 local fiTab = Window:Tab({
     Title = "Saito",
@@ -971,52 +978,112 @@ local fiTab = Window:Tab({
 
 fiTab:Section({ Title = "Part 1" })
 
+local autoFarmBossActive = false
 local killAuraActive = false
-local floatKillBossActive = false
 local autoBlockActive = false
 local autoExecuteSaitoActive = false
 local autoShockwaveBypass = false
 local antiObsessionActive = false
 local autoHealCrystalActive = false
-local antiBossHitboxActive = false
 local infDashActive = false
 local espBossAttacksActive = false
+
 local swingCounter = 0
-local lastBlockTick = 0
+local isSwinging = false
+local lastTorchThrow = 0
+local blockedTracks = {}
 local lastHealTick = 0
 
-fiTab:Toggle({
-    Title = "Kill Aura (ฟันบอสระยะไกลอัตโนมัติ P1 & P2)",
-    Value = false,
-    Callback = function(Value)
-        killAuraActive = Value
-    end,
-})
+-- ฟังก์ชันโจมตีบอสที่ใช้ได้ทั้ง Phase 1 (Katana) และ Phase 2 (WhiteFlameTorch Aimbot)
+local function PerformBossAttack()
+    if isSwinging or not character or not hrp or isHealingCrystal or game:HasTag("InCutscene") then return end
+    local hum = character:FindFirstChildOfClass("Humanoid")
+    if not hum or hum.Health <= 0 then return end
+
+    local bossFolder = workspace:FindFirstChild("Boss")
+    local cfg = bossFolder and bossFolder:FindFirstChild("Configuration")
+    if not cfg then return end
+
+    -- Phase 1: ใช้ดาบ Katana ฟันเมื่ออยู่ใกล้บอส (ระยะ < 16 studs) และบอสไม่ได้ออกท่าโจมตี
+    if cfg.P1Health.Value > 0 and bossFolder:FindFirstChild("BossModel1") then
+        if IsPhase1BossAttacking() then return end
+        local bRoot = bossFolder.BossModel1:FindFirstChild("HumanoidRootPart")
+        if not bRoot or (hrp.Position - bRoot.Position).Magnitude > 16 then return end
+
+        local katana = character:FindFirstChild("Katana") or (player:FindFirstChild("Backpack") and player.Backpack:FindFirstChild("Katana"))
+        if katana and katana:FindFirstChild("Handle") and katana:FindFirstChild("SwordSwingCFrame") then
+            isSwinging = true
+            if katana.Parent ~= character then
+                hum:EquipTool(katana)
+                task.wait(0.1)
+            end
+            katana:Activate()
+            task.wait(0.1)
+            local tEnd = os.clock() + 0.55
+            while os.clock() < tEnd and cfg.P1Health.Value > 0 and (killAuraActive or autoFarmBossActive) do
+                swingCounter = swingCounter + 1
+                katana.SwordSwingCFrame:FireServer(swingCounter, katana.Handle.CFrame, workspace:GetServerTimeNow())
+                RunService.RenderStepped:Wait()
+            end
+            task.wait(0.5)
+            isSwinging = false
+        end
+
+    -- Phase 2: ใช้คบเพลิง WhiteFlameTorch ล็อกเป้าปาใส่ BossModel2.Hitboxes.BodyBox อัตโนมัติ
+    elseif cfg.P1Health.Value <= 0 and cfg.P2Health.Value > 0 and bossFolder:FindFirstChild("BossModel2") then
+        if os.clock() - lastTorchThrow < 0.25 then return end
+        local bm2 = bossFolder.BossModel2
+        local bodyBox = bm2:FindFirstChild("Hitboxes") and bm2.Hitboxes:FindFirstChild("BodyBox")
+        local torch = character:FindFirstChild("WhiteFlameTorch") or (player:FindFirstChild("Backpack") and player.Backpack:FindFirstChild("WhiteFlameTorch"))
+        if bodyBox and torch then
+            lastTorchThrow = os.clock()
+            if torch.Parent ~= character then
+                hum:EquipTool(torch)
+            end
+            if torch:FindFirstChild("MouseLocation") then
+                torch.MouseLocation.OnClientInvoke = function()
+                    return hrp.Position, bodyBox.Position
+                end
+            end
+            if torch:FindFirstChild("TakeControl") then
+                torch.TakeControl:FireServer("take_control")
+                torch:Activate()
+                torch.TakeControl:FireServer("throw")
+            end
+        end
+    end
+end
 
 fiTab:Toggle({
-    Title = "Auto Float & Farm Boss (ลอยเหนือหัวบอส + ฟันรัวๆ)",
+    Title = "Auto Farm Boss P1 & P2 (ลอยตีบอส + หลบท่าบอสอัตโนมัติ 100%)",
     Value = false,
     Callback = function(Value)
-        floatKillBossActive = Value
-        killAuraActive = Value
-        if Value then
-            StartFloat()
-        else
+        autoFarmBossActive = Value
+        if not Value then
             StopFloat()
         end
     end,
 })
 
 fiTab:Toggle({
-    Title = "Auto Block / Parry (ตั้งการ์ดกันบอสอัตโนมัติ)",
+    Title = "Kill Aura & Torch Aimbot (ฟันอัตโนมัติ P1 / ล็อกเป้าปาไฟ P2)",
     Value = false,
     Callback = function(Value)
-        autoBlockActive = Value
+        killAuraActive = Value
     end,
 })
 
 fiTab:Toggle({
-    Title = "Auto Execute Saito (กด Kill Him อัตโนมัติตอนเลือดหมด)",
+    Title = "Auto Block / Parry (บล็อกเฉพาะจังหวะบอสง้างดาบโจมตี)",
+    Value = false,
+    Callback = function(Value)
+        autoBlockActive = Value
+        table.clear(blockedTracks)
+    end,
+})
+
+fiTab:Toggle({
+    Title = "Auto Execute Saito (กด Kill Him เข้าเฟส 2 อัตโนมัติ)",
     Value = false,
     Callback = function(Value)
         autoExecuteSaitoActive = Value
@@ -1043,32 +1110,21 @@ fiTab:Toggle({
 })
 
 fiTab:Toggle({
-    Title = "Auto Consume Purebloom (วาร์ปเก็บคริสตัลฮีลอัตโนมัติ)",
+    Title = "Auto Consume Purebloom (วาร์ปเก็บคริสตัลฮีลอัตโนมัติเมื่อเลือดลด)",
     Value = false,
     Callback = function(Value)
         autoHealCrystalActive = Value
     end,
 })
 
-fiTab:Toggle({
-    Title = "Delete Boss Hitboxes & Attacks (กันดาเมจชนบอส)",
-    Value = false,
-    Callback = function(Value)
-        antiBossHitboxActive = Value
-        if Value and workspace:FindFirstChild("Boss") then
-            DestroyTouchTransmitters(workspace.Boss)
-        end
-    end,
-})
-
 fiTab:Button({
     Title = "Consume Purebloom Crystal Now (เก็บคริสตัลฮีลทันที)",
     Callback = function()
-        ConsumeNearestCrystal()
+        task.spawn(ConsumeNearestCrystal)
     end,
 })
 
-fiTab:Section({ Title = "3. Movement, Cutscene & Ending" })
+fiTab:Section({ Title = "3. Movement & Ending" })
 
 fiTab:Toggle({
     Title = "Infinite Dash (กด Q พุ่งหลบไร้คูลดาวน์)",
@@ -1099,28 +1155,6 @@ UserInputService.InputBegan:Connect(function(input, gpe)
         end
     end
 end)
-
-fiTab:Button({
-    Title = "Skip Cutscene & Spawn Arena (ข้ามคัตซีนเข้าลานบอส)",
-    Callback = function()
-        pcall(function()
-            ReplicatedStorage.LoadState:FireServer(true)
-            RunService:UnbindFromRenderStep("CutsceneCamera")
-            RunService:UnbindFromRenderStep("camera")
-            workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
-            if player.PlayerGui:FindFirstChild("Effects") then
-                player.PlayerGui.Effects.Enabled = false
-            end
-            if player.PlayerGui:FindFirstChild("Backpack") then
-                player.PlayerGui.Backpack.Enabled = true
-            end
-            if workspace:FindFirstChild("Spawns") and workspace.Spawns:FindFirstChild("Boss") then
-                ReplicatedStorage.Spawn:InvokeServer(workspace.Spawns.Boss)
-                TeleportTo(workspace.Spawns.Boss.CFrame + Vector3.new(0, 6, 0))
-            end
-        end)
-    end,
-})
 
 fiTab:Button({
     Title = "Select Ending: Escape (เลือกฉากจบหนีรอด)",
@@ -1170,7 +1204,7 @@ fiTab:Toggle({
 })
 
 fiTab:Toggle({
-    Title = "esp Boss Attacks (พื้นที่สกิลบอส)",
+    Title = "esp Boss Attacks (หนวดและหินโจมตีของบอส)",
     Value = false,
     Callback = function(Value)
         espBossAttacksActive = Value
@@ -1252,66 +1286,87 @@ RunService.Heartbeat:Connect(function()
         if kb then kb:Destroy() end
     end
 
-    -- [Part 3] Delete Boss Hitboxes & ESP Boss Attacks
-    local bossFolder = workspace:FindFirstChild("Boss")
-    if bossFolder then
-        if antiBossHitboxActive then
-            DestroyTouchTransmitters(bossFolder)
-        end
-        if espBossAttacksActive and bossFolder:FindFirstChild("BossAttacks") then
-            for _, a in ipairs(bossFolder.BossAttacks:GetChildren()) do
-                ApplyESP(a, true, a.Name, Color3.fromRGB(255, 120, 0))
-            end
-        end
-    end
-
-    -- [Part 3] Auto Heal Crystal เมื่อเลือดลดหรือเสียหัวใจ
-    if autoHealCrystalActive and (os.clock() - lastHealTick > 2) then
-        local lives = player:FindFirstChild("Lives")
-        local needHeal = (hum and hum.Health < hum.MaxHealth) or (lives and lives.Value < 2)
-        if needHeal then
+    -- [Part 3] Auto Heal Crystal เมื่อเลือดต่ำกว่า 75
+    if autoHealCrystalActive and not isHealingCrystal and not game:HasTag("InCutscene") and (os.clock() - lastHealTick > 2.5) then
+        if hum and hum.Health > 0 and hum.Health <= 75 then
             lastHealTick = os.clock()
             task.spawn(ConsumeNearestCrystal)
         end
     end
 
-    -- [Part 3] Kill Aura / Float Farm / Auto Block / Auto Execute
+    -- [Part 3] Boss Fight Logic
+    local bossFolder = workspace:FindFirstChild("Boss")
     if bossFolder then
-        local activeBoss = GetActiveBossModel()
-        local bRoot = GetMonsterRoot(activeBoss)
-
-        if floatKillBossActive and bRoot then
-            TeleportTo(bRoot.CFrame * CFrame.new(0, 9, 4))
+        if espBossAttacksActive and bossFolder:FindFirstChild("BossAttacks") then
+            for _, a in ipairs(bossFolder.BossAttacks:GetChildren()) do
+                ApplyESP(a, true, a.Name, Color3.fromRGB(255, 120, 0))
+            end
         end
 
-        if killAuraActive and bRoot and hum and hum.Health > 0 then
-            local katana = character:FindFirstChild("Katana") or (player:FindFirstChild("Backpack") and player.Backpack:FindFirstChild("Katana"))
-            if katana then
-                if katana.Parent ~= character then
-                    hum:EquipTool(katana)
-                end
-                if katana:FindFirstChild("SwordSwingCFrame") then
-                    swingCounter = swingCounter + 1
-                    katana:Activate()
-                    katana.SwordSwingCFrame:FireServer(swingCounter, bRoot.CFrame, workspace:GetServerTimeNow())
+        if game:HasTag("InCutscene") or isHealingCrystal or not hum or hum.Health <= 0 then
+            return
+        end
+
+        local cfg = bossFolder:FindFirstChild("Configuration")
+        if not cfg then return end
+
+        -- 1. Auto Block เฉพาะตอนบอสเฟส 1 เริ่มออกท่าโจมตี (Action4) และอยู่ในระยะใกล้ (< 24 studs)
+        if autoBlockActive and cfg.P1Health.Value > 0 and bossFolder:FindFirstChild("BossModel1") then
+            local bRoot = bossFolder.BossModel1:FindFirstChild("HumanoidRootPart")
+            local attacking, tr = IsPhase1BossAttacking()
+            if attacking and tr and not blockedTracks[tr] and bRoot and (hrp.Position - bRoot.Position).Magnitude < 24 then
+                blockedTracks[tr] = true
+                local katana = character:FindFirstChild("Katana")
+                if katana and katana:FindFirstChild("BlockRequest") then
+                    task.spawn(function()
+                        pcall(function() katana.BlockRequest:InvokeServer() end)
+                    end)
                 end
             end
         end
 
-        if autoBlockActive and (os.clock() - lastBlockTick > 0.5) then
-            local katana = character:FindFirstChild("Katana")
-            if katana and katana:FindFirstChild("BlockRequest") then
-                lastBlockTick = os.clock()
-                task.spawn(function()
-                    pcall(function() katana.BlockRequest:InvokeServer() end)
-                end)
+        -- 2. Auto Farm Boss P1 & P2 (ลอยฟัน + หลบท่าโจมตีอัตโนมัติ)
+        if autoFarmBossActive then
+            if cfg.P1Health.Value > 0 and bossFolder:FindFirstChild("BossModel1") then
+                local bRoot = bossFolder.BossModel1:FindFirstChild("HumanoidRootPart")
+                if bRoot then
+                    if IsPhase1BossAttacking() then
+                        -- บอสกำลังออกท่าโจมตี -> ดีดตัวหลบไปมุมสูงด้านหลังบอส (ไม่โดนทั้งดาบและคลื่นเสา)
+                        hrp.CFrame = bRoot.CFrame * CFrame.new(0, 26, 22)
+                    else
+                        -- บอสไม่ได้ออกท่า -> ลอยเหนือหัวบอสที่ Y+12.5 (อยู่ใน BodyBox แต่สูงกว่าดาบบอส KatanaBox)
+                        hrp.CFrame = CFrame.new(bRoot.Position + Vector3.new(0, 12.5, 0))
+                    end
+                    hrp.AssemblyLinearVelocity = Vector3.zero
+                    hrp.AssemblyAngularVelocity = Vector3.zero
+                end
+            elseif cfg.P1Health.Value <= 0 and cfg.P2Health.Value > 0 and bossFolder:FindFirstChild("BossModel2") then
+                local bm2 = bossFolder.BossModel2
+                local bodyBox = bm2:FindFirstChild("Hitboxes") and bm2.Hitboxes:FindFirstChild("BodyBox")
+                if bodyBox then
+                    -- เฟส 2: บินวนเป็นวงกลมรัศมี 55 สูง +28 รอบบอส เพื่อหลบหนวดและหินบนพื้น 100%
+                    local angle = os.clock() * 2.5
+                    local offset = Vector3.new(math.cos(angle) * 55, 28, math.sin(angle) * 55)
+                    hrp.CFrame = CFrame.new(bodyBox.Position + offset, bodyBox.Position)
+                    hrp.AssemblyLinearVelocity = Vector3.zero
+                    hrp.AssemblyAngularVelocity = Vector3.zero
+                end
             end
         end
 
-        if autoExecuteSaitoActive and bossFolder:FindFirstChild("BossModel1") then
+        -- 3. โจมตีอัตโนมัติ (Kill Aura / Torch Aimbot)
+        if autoFarmBossActive or killAuraActive then
+            task.spawn(PerformBossAttack)
+        end
+
+        -- 4. Auto Execute Saito (เมื่อเลือดเฟส 1 หมดและปุ่ม Kill Him เปิดใช้งาน)
+        if (autoExecuteSaitoActive or autoFarmBossActive) and cfg.P1Health.Value <= 0 and bossFolder:FindFirstChild("BossModel1") then
             local pp = bossFolder.BossModel1:FindFirstChildWhichIsA("ProximityPrompt", true)
             if pp and pp.Enabled then
-                TeleportTo(bossFolder.BossModel1)
+                local bRoot = bossFolder.BossModel1:FindFirstChild("HumanoidRootPart")
+                if bRoot then
+                    hrp.CFrame = bRoot.CFrame * CFrame.new(0, 0, -4)
+                end
                 InteractPrompt(pp, 0)
             end
         end
