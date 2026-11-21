@@ -515,20 +515,37 @@ local function SolvePillars()
 end
 
 -- ==========================================
--- ฟังก์ชันของ Part 3 (Saito Finale Boss Fight - ทดสอบสด 100%)
+-- ฟังก์ชันของ Part 3 (Saito Finale Boss Fight)
 -- ==========================================
-local function IsPhase1BossAttacking()
+-- แยกสถานะบอสเฟส 1: กำลังโจมตีจริง (Attacking) vs บอสล้มคุกเข่า/สตั๊น (Downed/Stunned)
+local function GetPhase1BossState()
     local bm1 = workspace:FindFirstChild("Boss") and workspace.Boss:FindFirstChild("BossModel1")
     local hum = bm1 and bm1:FindFirstChildOfClass("Humanoid")
     local animator = hum and hum:FindFirstChildOfClass("Animator")
-    if not animator then return false, nil end
+    if not animator then return false, false, nil end
+
+    local isAttacking = false
+    local isDowned = false
+    local attackTrack = nil
 
     for _, tr in ipairs(animator:GetPlayingAnimationTracks()) do
-        if tr.Priority == Enum.AnimationPriority.Action4 and tr.IsPlaying and tr.TimePosition < (tr.Length - 0.15) then
-            return true, tr
+        if tr.IsPlaying and tr.Priority == Enum.AnimationPriority.Action4 then
+            local animId = tostring(tr.Animation and tr.Animation.AnimationId or "")
+            -- ท่าบอสล้มคุกเข่า (136570724392939 ยาว 5.8s) หรือท่าสตั๊นที่ยาวเกิน 3.5 วินาที -> บอสจะไม่โจมตี ให้ลงไปฟันได้เลย!
+            if string.find(animId, "136570724392939", 1, true) or tr.Length > 3.5 then
+                isDowned = true
+            elseif tr.TimePosition < (tr.Length - 0.15) then
+                -- ท่าฟันดาบปกติของบอส (ยาวประมาณ 2.1 - 2.2 วินาที)
+                isAttacking = true
+                attackTrack = tr
+            end
         end
     end
-    return false, nil
+
+    if isDowned then
+        return false, true, nil
+    end
+    return isAttacking, false, attackTrack
 end
 
 local isHealingCrystal = false
@@ -969,7 +986,7 @@ saitoTab:Toggle({
 })
 
 -- ==========================================
--- TAB 3: Saito (รอบชิงชนะเลิศ Finale Boss Fight - คัดเฉพาะที่ใช้ได้ 100%)
+-- TAB 3: Saito (รอบชิงชนะเลิศ Finale Boss Fight - ใช้งานได้ 100%)
 -- ==========================================
 local fiTab = Window:Tab({
     Title = "Saito",
@@ -986,6 +1003,9 @@ local autoShockwaveBypass = false
 local antiObsessionActive = false
 local autoHealCrystalActive = false
 local infDashActive = false
+
+local espBossActive = false
+local espCrystalsActive = false
 local espBossAttacksActive = false
 
 local swingCounter = 0
@@ -994,7 +1014,6 @@ local lastTorchThrow = 0
 local blockedTracks = {}
 local lastHealTick = 0
 
--- ฟังก์ชันโจมตีบอสที่ใช้ได้ทั้ง Phase 1 (Katana) และ Phase 2 (WhiteFlameTorch Aimbot)
 local function PerformBossAttack()
     if isSwinging or not character or not hrp or isHealingCrystal or game:HasTag("InCutscene") then return end
     local hum = character:FindFirstChildOfClass("Humanoid")
@@ -1004,9 +1023,11 @@ local function PerformBossAttack()
     local cfg = bossFolder and bossFolder:FindFirstChild("Configuration")
     if not cfg then return end
 
-    -- Phase 1: ใช้ดาบ Katana ฟันเมื่ออยู่ใกล้บอส (ระยะ < 16 studs) และบอสไม่ได้ออกท่าโจมตี
+    -- Phase 1: ฟันด้วย Katana ทันทีเมื่อบอสไม่ได้โจมตี (รวมถึงตอนบอสล้มคุกเข่า isDowned == true จะลงไปฟันรัวๆ ไม่ต้องรอ!)
     if cfg.P1Health.Value > 0 and bossFolder:FindFirstChild("BossModel1") then
-        if IsPhase1BossAttacking() then return end
+        local isAttacking, _ = GetPhase1BossState()
+        if isAttacking then return end
+
         local bRoot = bossFolder.BossModel1:FindFirstChild("HumanoidRootPart")
         if not bRoot or (hrp.Position - bRoot.Position).Magnitude > 16 then return end
 
@@ -1021,6 +1042,8 @@ local function PerformBossAttack()
             task.wait(0.1)
             local tEnd = os.clock() + 0.55
             while os.clock() < tEnd and cfg.P1Health.Value > 0 and (killAuraActive or autoFarmBossActive) do
+                local attackingNow, _ = GetPhase1BossState()
+                if attackingNow then break end
                 swingCounter = swingCounter + 1
                 katana.SwordSwingCFrame:FireServer(swingCounter, katana.Handle.CFrame, workspace:GetServerTimeNow())
                 RunService.RenderStepped:Wait()
@@ -1029,7 +1052,7 @@ local function PerformBossAttack()
             isSwinging = false
         end
 
-    -- Phase 2: ใช้คบเพลิง WhiteFlameTorch ล็อกเป้าปาใส่ BossModel2.Hitboxes.BodyBox อัตโนมัติ
+    -- Phase 2: ปาคบเพลิง WhiteFlameTorch ล็อกเป้าเข้า BossModel2.Hitboxes.BodyBox อัตโนมัติ
     elseif cfg.P1Health.Value <= 0 and cfg.P2Health.Value > 0 and bossFolder:FindFirstChild("BossModel2") then
         if os.clock() - lastTorchThrow < 0.25 then return end
         local bm2 = bossFolder.BossModel2
@@ -1055,7 +1078,7 @@ local function PerformBossAttack()
 end
 
 fiTab:Toggle({
-    Title = "Auto Farm Boss P1 & P2 (ลอยตีบอส + หลบท่าบอสอัตโนมัติ 100%)",
+    Title = "Auto Farm Boss P1 & P2 (ลอยตี + ลงฟันตอนบอสล้ม + หลบท่าบอส)",
     Value = false,
     Callback = function(Value)
         autoFarmBossActive = Value
@@ -1174,12 +1197,13 @@ fiTab:Button({
     end,
 })
 
-fiTab:Section({ Title = "4. ESP Boss & Crystals" })
+fiTab:Section({ Title = "4. ESP Boss & Crystals (Real-time)" })
 
 fiTab:Toggle({
-    Title = "esp Boss (Saito Phase 1 & Phase 2)",
+    Title = "esp Boss (Saito Phase 1 & Phase 2 Real-time)",
     Value = false,
     Callback = function(Value)
+        espBossActive = Value
         local bossFolder = workspace:FindFirstChild("Boss")
         if not bossFolder then return end
         for _, mName in ipairs({"BossModel1", "BossModel2"}) do
@@ -1192,32 +1216,37 @@ fiTab:Toggle({
 })
 
 fiTab:Toggle({
-    Title = "esp Purebloom Crystals (คริสตัลฮีลเลือด 3 จุด)",
+    Title = "esp Purebloom Crystals (อัปเดตเรียลไทม์ตอนคริสตัลเกิด/ถูกเก็บ)",
     Value = false,
     Callback = function(Value)
+        espCrystalsActive = Value
         local pb = workspace:FindFirstChild("PureBloom")
         if not pb then return end
         for i, c in ipairs(pb:GetChildren()) do
-            ApplyESP(c, Value, "Purebloom #" .. i, Color3.fromRGB(0, 255, 200), Vector3.new(4, 6, 4), true)
+            local pp = c:FindFirstChildWhichIsA("ProximityPrompt", true)
+            local isAvailable = Value and (c.Transparency < 1) and (not pp or pp.Enabled)
+            ApplyESP(c, isAvailable, "Purebloom #" .. i, Color3.fromRGB(0, 255, 200), Vector3.new(4, 6, 4), true)
         end
     end,
 })
 
 fiTab:Toggle({
-    Title = "esp Boss Attacks (หนวดและหินโจมตีของบอส)",
+    Title = "esp Boss Attacks (อัปเดตเรียลไทม์ตอนหนวด/หินสปอน)",
     Value = false,
     Callback = function(Value)
         espBossAttacksActive = Value
         local ba = workspace:FindFirstChild("Boss") and workspace.Boss:FindFirstChild("BossAttacks")
         if not ba then return end
         for _, a in ipairs(ba:GetChildren()) do
-            ApplyESP(a, Value, a.Name, Color3.fromRGB(255, 120, 0))
+            local pos = a:IsA("BasePart") and a.Position or (a:IsA("Model") and a:GetPivot().Position)
+            local shouldShow = Value and (not pos or pos.Y > -20)
+            ApplyESP(a, shouldShow, a.Name, Color3.fromRGB(255, 120, 0), nil, true)
         end
     end,
 })
 
 -- ==========================================
--- ลูปหลักรวมการทำงานของทั้ง Part 2 และ Part 3
+-- ลูปหลักรวมการทำงานและอัปเดต ESP แบบ Real-time
 -- ==========================================
 RunService.Heartbeat:Connect(function()
     if not character or not hrp then return end
@@ -1264,9 +1293,18 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- [Part 2] อัปเดต ESP EscapeDoor อัตโนมัติทันทีที่ประตูถูกเสกขึ้นมา
+    -- [Part 2] Real-time ESP EscapeDoor
     if espEscapeDoorActive and workspace:FindFirstChild("EscapeDoor") then
         ApplyESP(workspace.EscapeDoor, true, "EXIT DOOR", Color3.fromRGB(0, 255, 0), Vector3.new(6, 10, 6), true)
+    end
+
+    -- [Part 3] Real-time ESP Purebloom Crystals (แสดงเฉพาะคริสตัลที่พร้อมเก็บ ถ้าถูกเก็บไปแล้วจะลบออก พอเกิดใหม่จะขึ้น ESP ทันที)
+    if espCrystalsActive and workspace:FindFirstChild("PureBloom") then
+        for i, c in ipairs(workspace.PureBloom:GetChildren()) do
+            local pp = c:FindFirstChildWhichIsA("ProximityPrompt", true)
+            local isAvailable = (c.Transparency < 1) and (not pp or pp.Enabled)
+            ApplyESP(c, isAvailable, "Purebloom #" .. i, Color3.fromRGB(0, 255, 200), Vector3.new(4, 6, 4), true)
+        end
     end
 
     -- [Part 3] Auto Shockwave & Anti-Obsession
@@ -1280,7 +1318,7 @@ RunService.Heartbeat:Connect(function()
         if hum and hum.WalkSpeed < 18 then hum.WalkSpeed = 18 end
     end
 
-    -- [Part 3] Infinite Dash (ลบ DashKnockback)
+    -- [Part 3] Infinite Dash
     if infDashActive then
         local kb = hrp:FindFirstChild("DashKnockback")
         if kb then kb:Destroy() end
@@ -1294,12 +1332,25 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- [Part 3] Boss Fight Logic
+    -- [Part 3] Boss Fight & Real-time Boss/Attack ESP
     local bossFolder = workspace:FindFirstChild("Boss")
     if bossFolder then
+        -- Real-time ESP Boss (เผื่อตอนเข้าเฟส 2 แล้ว BossModel2 เพิ่งถูกเสกมา)
+        if espBossActive then
+            for _, mName in ipairs({"BossModel1", "BossModel2"}) do
+                local bm = bossFolder:FindFirstChild(mName)
+                if bm then
+                    ApplyESP(bm, true, mName, Color3.fromRGB(255, 0, 0), Vector3.new(8, 14, 8), true)
+                end
+            end
+        end
+
+        -- Real-time ESP Boss Attacks (แสดงเฉพาะหนวดและหินที่โผล่ขึ้นมาบนสนาม Y > -20)
         if espBossAttacksActive and bossFolder:FindFirstChild("BossAttacks") then
             for _, a in ipairs(bossFolder.BossAttacks:GetChildren()) do
-                ApplyESP(a, true, a.Name, Color3.fromRGB(255, 120, 0))
+                local pos = a:IsA("BasePart") and a.Position or (a:IsA("Model") and a:GetPivot().Position)
+                local onArena = not pos or pos.Y > -20
+                ApplyESP(a, onArena, a.Name, Color3.fromRGB(255, 120, 0), nil, true)
             end
         end
 
@@ -1310,12 +1361,13 @@ RunService.Heartbeat:Connect(function()
         local cfg = bossFolder:FindFirstChild("Configuration")
         if not cfg then return end
 
-        -- 1. Auto Block เฉพาะตอนบอสเฟส 1 เริ่มออกท่าโจมตี (Action4) และอยู่ในระยะใกล้ (< 24 studs)
+        local isAttacking, isDowned, attackTrack = GetPhase1BossState()
+
+        -- 1. Auto Block เฉพาะตอนบอสเฟส 1 ง้างดาบโจมตีจริง (ไม่บล็อกตอนบอสล้มคุกเข่า)
         if autoBlockActive and cfg.P1Health.Value > 0 and bossFolder:FindFirstChild("BossModel1") then
             local bRoot = bossFolder.BossModel1:FindFirstChild("HumanoidRootPart")
-            local attacking, tr = IsPhase1BossAttacking()
-            if attacking and tr and not blockedTracks[tr] and bRoot and (hrp.Position - bRoot.Position).Magnitude < 24 then
-                blockedTracks[tr] = true
+            if isAttacking and attackTrack and not blockedTracks[attackTrack] and bRoot and (hrp.Position - bRoot.Position).Magnitude < 24 then
+                blockedTracks[attackTrack] = true
                 local katana = character:FindFirstChild("Katana")
                 if katana and katana:FindFirstChild("BlockRequest") then
                     task.spawn(function()
@@ -1325,16 +1377,19 @@ RunService.Heartbeat:Connect(function()
             end
         end
 
-        -- 2. Auto Farm Boss P1 & P2 (ลอยฟัน + หลบท่าโจมตีอัตโนมัติ)
+        -- 2. Auto Farm Boss P1 & P2
         if autoFarmBossActive then
             if cfg.P1Health.Value > 0 and bossFolder:FindFirstChild("BossModel1") then
                 local bRoot = bossFolder.BossModel1:FindFirstChild("HumanoidRootPart")
                 if bRoot then
-                    if IsPhase1BossAttacking() then
-                        -- บอสกำลังออกท่าโจมตี -> ดีดตัวหลบไปมุมสูงด้านหลังบอส (ไม่โดนทั้งดาบและคลื่นเสา)
+                    if isDowned then
+                        -- บอสกำลังล้มคุกเข่า/สตั๊น (ไม่โจมตีแน่นอน) -> ลงไปประกบฟันกลางตัวบอสที่ Y+6 ทันทีไม่ต้องรอ!
+                        hrp.CFrame = CFrame.new(bRoot.Position + Vector3.new(0, 6, 0))
+                    elseif isAttacking then
+                        -- บอสกำลังออกท่าฟันดาบ -> ดีดตัวหลบไปมุมสูงด้านหลังบอส
                         hrp.CFrame = bRoot.CFrame * CFrame.new(0, 26, 22)
                     else
-                        -- บอสไม่ได้ออกท่า -> ลอยเหนือหัวบอสที่ Y+12.5 (อยู่ใน BodyBox แต่สูงกว่าดาบบอส KatanaBox)
+                        -- บอสเดินปกติ -> ลอยเหนือหัวบอสที่ Y+12.5 ฟันฟรี
                         hrp.CFrame = CFrame.new(bRoot.Position + Vector3.new(0, 12.5, 0))
                     end
                     hrp.AssemblyLinearVelocity = Vector3.zero
@@ -1344,7 +1399,6 @@ RunService.Heartbeat:Connect(function()
                 local bm2 = bossFolder.BossModel2
                 local bodyBox = bm2:FindFirstChild("Hitboxes") and bm2.Hitboxes:FindFirstChild("BodyBox")
                 if bodyBox then
-                    -- เฟส 2: บินวนเป็นวงกลมรัศมี 55 สูง +28 รอบบอส เพื่อหลบหนวดและหินบนพื้น 100%
                     local angle = os.clock() * 2.5
                     local offset = Vector3.new(math.cos(angle) * 55, 28, math.sin(angle) * 55)
                     hrp.CFrame = CFrame.new(bodyBox.Position + offset, bodyBox.Position)
